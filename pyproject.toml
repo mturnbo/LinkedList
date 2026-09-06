@@ -1,6 +1,4 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+
 
 [project]
 name = "mt-linked-lList"
@@ -16,4 +14,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = [
+    "hatchling>=1.32.0",
+    "pytest>=9.1.1",
+]
