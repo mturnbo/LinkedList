@@ -1,6 +1,5 @@
 from linked_list.node import Node
 from typing import Any, Optional
-from exceptions import *
 
 class BaseLinkedList:
     def __init__(self, initial_node_value: Any | None = None):

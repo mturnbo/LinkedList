@@ -1,41 +1,29 @@
-import sys
+from typing import Any, Optional
+
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList
-from exceptions import *
 
 class SinglyLinkedList(BaseLinkedList):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, initial_node_value: Any | None = None):
+        super().__init__(initial_node_value)
 
-    def append(self, value: Any):
+    def append(self, value: Any) -> bool:
         """
         Adds a new node to the end of the linked list.
         Time complexity: O(1)
         """
 
-        try:
-            if not value:
-                raise EmptyValueException(value)
+        if self.has_cycle():
+            return False
 
-            if self.has_cycle():
-                raise CycleDetectedException(sys._getframe().f_code.co_name)
-
-            new_node = Node(value)
-            if self.head:
-                self.tail.next = new_node
-            else:
-                self.head = new_node
-            self.tail = new_node
-            self.size += 1
-            return True
-        except EmptyValueException as e:
-            print(e)
-        except ValueTypeException as e:
-            print(e)
-        except CycleDetectedException as e:
-            print(e)
-
-        return False
+        new_node = Node(value)
+        if self.head:
+            self.tail.next = new_node
+        else:
+            self.head = new_node
+        self.tail = new_node
+        self.size += 1
+        return True
 
 
     def append_values(self, values: list[Any]) -> int:
@@ -43,32 +31,30 @@ class SinglyLinkedList(BaseLinkedList):
         Adds multiple new nodes to the end of the linked list.
         Time complexity: O(n)
         """
+        appended_count = 0
         for value in values:
-            self.append(value)
+            if self.append(value):
+                appended_count += 1
 
-        return len(values)
+        return appended_count
 
 
-    def prepend(self, value: Any):
+    def prepend(self, value: Any) -> bool:
         """
         Adds a new node to the front of the linked list.
         Time complexity: O(1)
         """
-        try:
-            if not value:
-                raise EmptyValueException(value)
 
-            new_node = Node(value)
-            new_node.next = self.head
-            self.head = new_node
-            self.size += 1
-            return True
-        except EmptyValueException as e:
-            print(e)
-        except ValueTypeException as e:
-            print(e)
+        if self.has_cycle():
+            return False
 
-        return False
+        new_node = Node(value)
+        new_node.next = self.head
+        if self.head is None:
+            self.tail = new_node
+        self.head = new_node
+        self.size += 1
+        return True
 
 
     def prepend_values(self, values: list[Any]) -> int:
@@ -78,39 +64,34 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
+        prepended_count = 0
         for value in values[::-1]:
-            self.prepend(value)
+            if self.prepend(value):
+                prepended_count += 1
 
-        return len(values)
+        return prepended_count
 
 
-    def insert(self, index: int, value: Any):
+    def insert(self, index: int, value: Any) -> bool:
         """
         Inserts a new node at the specified index.
         Time complexity: O(n)
         """
 
-        try:
-            if self.has_cycle():
-                raise CycleDetectedException(sys._getframe().f_code.co_name)
+        if self.has_cycle():
+            return False
 
-            if index == 0:
-                self.prepend(value)
-            elif index >= self.size:
-                self.append(value)
-            else:
-                new_node = Node(value)
-                current_node = self.get_node(index -1)
-                new_node.next = current_node.next
-                current_node.next = new_node
-                self.size += 1
-                return True
-        except ValueTypeException as e:
-            print(e)
-        except CycleDetectedException as e:
-            print(e)
+        if index <= 0:
+            return self.prepend(value)
+        if index >= self.size:
+            return self.append(value)
 
-        return False
+        new_node = Node(value)
+        current_node = self.get_node(index - 1)
+        new_node.next = current_node.next
+        current_node.next = new_node
+        self.size += 1
+        return True
 
 
     def replace(self, index: int, value: Any) -> bool:
@@ -119,14 +100,15 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        try:
-            current_node = self.get_node(index)
-            current_node.value = value
-            return True
-        except Exception as e:
-            print(e)
+        if index < 0 or index >= self.size:
+            return False
 
-        return False
+        current_node = self.get_node(index)
+        if current_node is None:
+            return False
+
+        current_node.value = value
+        return True
 
 
     def contains(self, value: Any) -> bool:
@@ -143,7 +125,46 @@ class SinglyLinkedList(BaseLinkedList):
         return False
 
 
-    def remove(self, index: int):
+    def pop_head(self) -> Node | None:
+        """
+        Removes and returns the head node.
+        Time complexity: O(1)
+        """
+
+        if self.head is None:
+            return None
+
+        popped_node = self.head
+        self.head = popped_node.next
+        if self.head is None:
+            self.tail = None
+        popped_node.next = None
+        self.size -= 1
+
+        return popped_node
+
+
+    def pop_tail(self) -> Node | None:
+        """
+        Removes and returns the tail node.
+        Time complexity: O(n)
+        """
+
+        if self.tail is None or self.has_cycle():
+            return None
+        if self.size == 1:
+            return self.pop_head()
+
+        previous_node = self.get_node(self.size - 2)
+        popped_node = self.tail
+        previous_node.next = None
+        self.tail = previous_node
+        self.size -= 1
+
+        return popped_node
+
+
+    def remove(self, index: int) -> bool:
         """
         Removes a node at the specified index.
         Time complexity: O(n)
@@ -151,10 +172,9 @@ class SinglyLinkedList(BaseLinkedList):
 
         if index < 0 or index >= self.size: return False
         if index == 0:
-            self.head = self.head.next
-            self.size -= 1
+            return self.pop_head() is not None
         elif index >= self.size - 1:
-            self.trim()
+            return self.pop_tail() is not None
         else:
             current_node = self.get_node(index - 1)
             current_node.next = current_node.next.next
