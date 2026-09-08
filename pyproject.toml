@@ -1,7 +1,9 @@
-
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "mt-linked-lList"
+name = "mt-linked-list"
 version = "0.1.0"
 authors = [
     { name="Marcus E. Turnbo", email="marcus@emarcus.com" },
@@ -14,7 +16,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "hatchling>=1.32.0",
+dependencies = []
+
+[dependency-groups]
+dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.setuptools]
+py-modules = ["exceptions"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
