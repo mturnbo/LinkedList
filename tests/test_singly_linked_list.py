@@ -75,3 +75,25 @@ def test_remove_uses_pop_behavior_for_head_and_tail():
     assert linked_list.get_values() == ["b", "c"]
     assert linked_list.remove(1) is True
     assert linked_list.get_values() == ["b"]
+
+
+def test_homogeneous_list_accepts_matching_values():
+    linked_list = SinglyLinkedList(value_type=str)
+
+    assert linked_list.append("a") is True
+    assert linked_list.prepend("b") is True
+    assert linked_list.insert(1, "c") is True
+    assert linked_list.replace(1, "d") is True
+    assert linked_list.get_values() == ["b", "d", "a"]
+
+
+def test_homogeneous_list_rejects_mismatched_values():
+    linked_list = SinglyLinkedList(value_type=int)
+
+    assert linked_list.append(1) is True
+    assert linked_list.append("2") is False
+    assert linked_list.prepend(False) is False
+    assert linked_list.insert(1, 2.0) is False
+    assert linked_list.replace(0, "1") is False
+    assert linked_list.get_values() == [1]
+

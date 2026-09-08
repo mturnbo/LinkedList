@@ -1,11 +1,16 @@
 from typing import Any, Optional
 
 from linked_list.node import Node
-from linked_list.base import BaseLinkedList
+from linked_list.base import BaseLinkedList, _MISSING
 
 class SinglyLinkedList(BaseLinkedList):
-    def __init__(self, initial_node_value: Any | None = None):
-        super().__init__(initial_node_value)
+    def __init__(
+        self,
+        initial_node_value: Any = _MISSING,
+        value_type: type | None = None,
+    ):
+        super().__init__(initial_node_value, value_type=value_type)
+
 
     def append(self, value: Any) -> bool:
         """
@@ -13,7 +18,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if self.has_cycle():
+        if not self._accepts_value(value) or self.has_cycle():
             return False
 
         new_node = Node(value)
@@ -45,7 +50,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if self.has_cycle():
+        if not self._accepts_value(value) or self.has_cycle():
             return False
 
         new_node = Node(value)
@@ -78,7 +83,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if self.has_cycle():
+        if not self._accepts_value(value) or self.has_cycle():
             return False
 
         if index <= 0:
@@ -100,7 +105,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size:
+        if index < 0 or index >= self.size or not self._accepts_value(value):
             return False
 
         current_node = self.get_node(index)

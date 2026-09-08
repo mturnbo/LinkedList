@@ -1,13 +1,46 @@
 from linked_list.node import Node
 from typing import Any, Optional
 
+_MISSING = object()
+
 class BaseLinkedList:
-    def __init__(self, initial_node_value: Any | None = None):
+    def __init__(
+        self,
+        initial_node_value: Any = _MISSING,
+        value_type: type | None = None,
+    ):
+        if value_type is not None and not self._is_valid_value_type(value_type):
+            raise TypeError("value_type must be a type.")
+
+        self.value_type = value_type
         self.head: Node | None = (
-            Node(initial_node_value) if initial_node_value is not None else None
+            Node(initial_node_value) if initial_node_value is not _MISSING else None
         )
         self.tail: Node | None = self.head
-        self.size: int = 0 if initial_node_value is None else 1
+        self.size: int = 0 if initial_node_value is _MISSING else 1
+
+        if self.head and not self._accepts_value(self.head.value):
+            raise TypeError(
+                f"Initial node value must be of type {self._value_type_name()}."
+            )
+
+
+    def _is_valid_value_type(self, value_type: type) -> bool:
+        return isinstance(value_type, type)
+
+
+    def _accepts_value(self, value: Any) -> bool:
+        if self.value_type is None:
+            return True
+
+        return type(value) is self.value_type
+
+
+    def _value_type_name(self) -> str:
+        if self.value_type is None:
+            return "Any"
+
+        return self.value_type.__name__
 
 
     def __len__(self):
