@@ -97,3 +97,68 @@ def test_homogeneous_list_rejects_mismatched_values():
     assert linked_list.replace(0, "1") is False
     assert linked_list.get_values() == [1]
 
+
+def test_get_cycle_start_index_methods():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3, 4, 5])
+    assert ll.get_cycle_start_index() is None
+
+    ll.create_cycle(2)
+    assert ll.get_cycle_start_index() == 2
+
+
+def test_create_cycle_rejects_invalid_start_index():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+
+    assert ll.create_cycle(-1) is False
+    assert ll.create_cycle(2) is False
+    assert ll.create_cycle(3) is False
+    assert ll.has_cycle() is False
+
+
+def test_sort_merge():
+    ll = SinglyLinkedList()
+    values = [4, 2, 5, 1, 3]
+    for value in values:
+        ll.append(value)
+
+    assert ll.sort(method=1) is True
+    assert ll.get_values() == [1, 2, 3, 4, 5]
+    assert ll.head.value == 1
+    assert ll.tail.value == 5
+
+
+def test_sort_insertion():
+    ll = SinglyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(method=2) is True
+    assert ll.get_values() == [1, 2, 3, 4, 5]
+    assert ll.head.value == 1
+    assert ll.tail.value == 5
+
+
+def test_sort_returns_false_for_invalid_method():
+    ll = SinglyLinkedList()
+    ll.append_values([2, 1])
+
+    assert ll.sort(method=3) is False
+    assert ll.get_values() == [2, 1]
+
+
+def test_sort_returns_false_without_mutation_for_mixed_unsortable_values():
+    ll = SinglyLinkedList()
+    ll.append_values([2, "1", 3])
+
+    assert ll.sort(method=1) is False
+    assert ll.get_values() == [2, "1", 3]
+    assert ll.tail.value == 3
+
+
+def test_sort_homogeneous_list():
+    ll = SinglyLinkedList(value_type=str)
+    ll.append_values(["c", "a", "b"])
+
+    assert ll.sort() is True
+    assert ll.get_values() == ["a", "b", "c"]
