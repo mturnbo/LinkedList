@@ -3,7 +3,7 @@ from typing import Any, Optional
 from exceptions import *
 
 class BaseLinkedList:
-    def __init__(self, initial_node_value: int | float | str | bool | None = None):
+    def __init__(self, initial_node_value: Any | None = None):
         self.head: Node | None = (
             Node(initial_node_value) if initial_node_value is not None else None
         )
