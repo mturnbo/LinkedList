@@ -1,5 +1,4 @@
 from typing import Any, Optional
-
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
@@ -206,49 +205,6 @@ class SinglyLinkedList(BaseLinkedList):
         start_node = self.get_node(start)
         self.tail.next = start_node
         return True
-
-
-    def has_cycle(self) -> bool:
-        """
-        Detects if the linked list has a cycle.
-        Floyd's Cycle-Finding Algorithm
-        Time complexity: O(n)
-        """
-
-        fast_runner = slow_runner = self.head
-        while fast_runner and fast_runner.next:
-            fast_runner = fast_runner.next.next
-            slow_runner = slow_runner.next
-            if fast_runner is slow_runner:
-                return True
-
-        return False
-
-
-    def get_cycle_start_index(self) -> Optional[int]:
-        """
-        Returns the index of the node where the cycle begins, or None if no cycle.
-        Floyd's Cycle-Finding Algorithm
-        Time complexity: O(n)
-        """
-
-        fast_runner = slow_runner = self.head
-        while fast_runner and fast_runner.next:
-            fast_runner = fast_runner.next.next
-            slow_runner = slow_runner.next
-            if fast_runner is slow_runner:
-                break
-        else:
-            return None
-
-        slow_runner = self.head
-        index = 0
-        while slow_runner is not fast_runner:
-            slow_runner = slow_runner.next
-            fast_runner = fast_runner.next
-            index += 1
-
-        return index
 
 
     def reverse(self):
