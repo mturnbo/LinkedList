@@ -223,7 +223,7 @@ def test_create_cycle_rejects_invalid_start_index():
     assert ll.create_cycle(-1) is False
     assert ll.create_cycle(2) is False
     assert ll.create_cycle(3) is False
-    assert ll.has_cycle() is False
+    assert ll._has_cycle() is False
 
 
 def test_sort_merge():

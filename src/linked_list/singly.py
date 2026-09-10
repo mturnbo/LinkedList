@@ -17,7 +17,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self.has_cycle():
+        if not self._accepts_value(value) or self._has_cycle():
             return False
 
         new_node = Node(value)
@@ -49,7 +49,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self.has_cycle():
+        if not self._accepts_value(value) or self._has_cycle():
             return False
 
         new_node = Node(value)
@@ -82,7 +82,7 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if not self._accepts_value(value) or self.has_cycle():
+        if not self._accepts_value(value) or self._has_cycle():
             return False
 
         if index <= 0:
@@ -150,26 +150,6 @@ class SinglyLinkedList(BaseLinkedList):
 
         return True
 
-    def create_cycle(self, start: int):
-        """
-        Create a cycle in the linked list.
-        Accepts start index.  Start index must be less than tail index.
-        Example:
-        1 → 2 → 3 → 4 → 5
-                ↑       ↓
-                ← ← ← ← ←
-        Time complexity: O(1)
-        """
-
-        if self.has_cycle() or self.tail is None:
-            return False
-        if start < 0 or start >= self.size - 1:
-            return False
-
-        start_node = self.get_node(start)
-        self.tail.next = start_node
-        return True
-
 
     def reverse(self):
         """
@@ -189,6 +169,7 @@ class SinglyLinkedList(BaseLinkedList):
 
         return True
 
+
     def sort(self, method: int = 1) -> bool:
         """
         Sorts the linked list in place.
@@ -196,7 +177,7 @@ class SinglyLinkedList(BaseLinkedList):
         method=2: Insertion sort
         """
 
-        if method not in (1, 2) or self.has_cycle():
+        if method not in (1, 2) or self._has_cycle():
             return False
         if self.size <= 1:
             return True
@@ -292,11 +273,4 @@ class SinglyLinkedList(BaseLinkedList):
         return True
 
 
-    def _values_are_sortable(self) -> bool:
-        values = self.get_values()
-        try:
-            sorted(values)
-        except TypeError:
-            return False
 
-        return True

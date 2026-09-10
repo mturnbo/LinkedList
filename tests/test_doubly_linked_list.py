@@ -91,3 +91,56 @@ def test_pop_tail(dll_123):
     dll_123.pop_tail()
     assert dll_123.size == 2
     assert dll_123.tail.value == 2
+
+
+def test_reverse(dll_123):
+    dll_123.reverse()
+    assert dll_123.head.value == 3
+    assert dll_123.tail.value == 1
+
+
+def test_sort_merge():
+    ll = DoublyLinkedList()
+    values = [4, 2, 5, 1, 3]
+    for value in values:
+        ll.append(value)
+
+    assert ll.sort(method=1) is True
+    assert ll.get_values() == [1, 2, 3, 4, 5]
+    assert ll.head.value == 1
+    assert ll.tail.value == 5
+
+
+def test_sort_insertion():
+    ll = DoublyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(method=2) is True
+    assert ll.get_values() == [1, 2, 3, 4, 5]
+    assert ll.head.value == 1
+    assert ll.tail.value == 5
+
+
+def test_sort_returns_false_for_invalid_method():
+    ll = DoublyLinkedList()
+    ll.append_values([2, 1])
+
+    assert ll.sort(method=3) is False
+    assert ll.get_values() == [2, 1]
+
+
+def test_sort_returns_false_without_mutation_for_mixed_unsortable_values():
+    ll = DoublyLinkedList()
+    ll.append_values([2, "1", 3])
+
+    assert ll.sort(method=1) is False
+    assert ll.get_values() == [2, "1", 3]
+    assert ll.tail.value == 3
+
+
+def test_sort_homogeneous_list():
+    ll = DoublyLinkedList(value_type=str)
+    ll.append_values(["c", "a", "b"])
+
+    assert ll.sort() is True
+    assert ll.get_values() == ["a", "b", "c"]

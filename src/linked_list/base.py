@@ -87,6 +87,16 @@ class BaseLinkedList:
         return values
 
 
+    def _values_are_sortable(self) -> bool:
+        values = self.get_values()
+        try:
+            sorted(values)
+        except TypeError:
+            return False
+
+        return True
+
+
     def get_addresses(self, count: Optional[int] = None) -> list[int]:
         """
         Returns a list of node addresses
@@ -152,7 +162,7 @@ class BaseLinkedList:
         Time complexity: O(n)
         """
 
-        if self.tail is None or self.has_cycle():
+        if self.tail is None or self._has_cycle():
             return None
         if self.size == 1:
             return self.pop_head()
@@ -166,7 +176,7 @@ class BaseLinkedList:
         return popped_node
 
 
-    def has_cycle(self) -> bool:
+    def _has_cycle(self) -> bool:
         """
         Detects if the linked list has a cycle.
         Floyd's Cycle-Finding Algorithm
@@ -229,4 +239,25 @@ class BaseLinkedList:
             self.head = self.tail = None
             self.size = 0
 
+        return True
+
+
+    def create_cycle(self, start: int):
+        """
+        Create a cycle in the linked list.
+        Accepts start index.  Start index must be less than tail index.
+        Example:
+        1 → 2 → 3 → 4 → 5
+                ↑       ↓
+                ← ← ← ← ←
+        Time complexity: O(1)
+        """
+
+        if self._has_cycle() or self.tail is None:
+            return False
+        if start < 0 or start >= self.size - 1:
+            return False
+
+        start_node = self.get_node(start)
+        self.tail.next = start_node
         return True
