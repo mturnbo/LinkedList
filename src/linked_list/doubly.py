@@ -51,18 +51,134 @@ class DoublyLinkedList(BaseLinkedList):
         return True
 
 
-    def remove(self, index: int):
+    def prepend(self, value: Any) -> bool:
+        """
+        Adds a new node to the front of the linked list.
+        Time complexity: O(1)
+        """
+
+        if not self._accepts_value(value) or self._has_cycle():
+            return False
+
+        new_node = Node(value)
+        new_node.next = self.head
+        if self.head:
+            self.head.prev = new_node
+        else:
+            self.tail = new_node
+        self.head = new_node
+        self.size += 1
+        return True
+
+
+    def prepend_values(self, values: list[Any]) -> int:
+        """
+        Adding multiple nodes to the front of the linked list.
+        Preserves order.
+        Time complexity: O(n)
+        """
+
+        prepended_count = 0
+        for value in values[::-1]:
+            if self.prepend(value):
+                prepended_count += 1
+
+        return prepended_count
+
+
+    def insert(self, index: int, value: Any) -> bool:
+        """
+        Inserts a new node at the specified index.
+        Time complexity: O(n)
+        """
+
+        if not self._accepts_value(value) or self._has_cycle():
+            return False
+
+        if index <= 0:
+            return self.prepend(value)
+        if index >= self.size:
+            return self.append(value)
+
+        previous_node = self.get_node(index - 1)
+        next_node = previous_node.next
+        new_node = Node(value, prev=previous_node, next=next_node)
+        previous_node.next = new_node
+        next_node.prev = new_node
+        self.size += 1
+        return True
+
+
+    def replace(self, index: int, value: Any) -> bool:
+        """
+        Replaces the value of a node at the specified index.
+        Time complexity: O(n)
+        """
+
+        if index < 0 or index >= self.size or not self._accepts_value(value):
+            return False
+
+        current_node = self.get_node(index)
+        if current_node is None:
+            return False
+
+        current_node.value = value
+        return True
+
+
+    def pop_head(self) -> Node | None:
+        """
+        Removes and returns the head node.
+        Time complexity: O(1)
+        """
+
+        if self.head is None:
+            return None
+
+        popped_node = self.head
+        self.head = popped_node.next
+        if self.head:
+            self.head.prev = None
+        else:
+            self.tail = None
+        popped_node.next = None
+        popped_node.prev = None
+        self.size -= 1
+
+        return popped_node
+
+
+    def pop_tail(self) -> Node | None:
+        """
+        Removes and returns the tail node.
+        Time complexity: O(1)
+        """
+
+        if self.tail is None or self._has_cycle():
+            return None
+        if self.size == 1:
+            return self.pop_head()
+
+        popped_node = self.tail
+        self.tail = popped_node.prev
+        self.tail.next = None
+        popped_node.prev = None
+        popped_node.next = None
+        self.size -= 1
+
+        return popped_node
+
+
+    def remove(self, index: int) -> bool:
         """
         Removes the node at the specified index.
         Time complexity: O(n)
         """
         if index < 0 or index >= self.size: return False
         if index == 0:
-            self.head = self.head.next
-            self.head.prev = None
+            return self.pop_head() is not None
         elif index >= self.size - 1:
-            self.tail = self.tail.prev
-            self.tail.next = None
+            return self.pop_tail() is not None
         else:
             current_node = self.get_node(index -1)
             next_node = current_node.next.next
@@ -92,6 +208,11 @@ class DoublyLinkedList(BaseLinkedList):
             forward = forward.next if forward else None
             backward = backward.prev if backward else None
 
+        return False
+
+
+    def create_cycle(self, start: int) -> bool:
+        """Doubly linked lists do not support forward-only cycles."""
         return False
 
 
@@ -231,6 +352,5 @@ class DoublyLinkedList(BaseLinkedList):
             self.head = sorted_head
             self.tail = sorted_tail
             return True
-
 
 

@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 _MISSING = object()
 
-class BaseLinkedList:
+class BaseLinkedList(ABC):
     def __init__(
         self,
         initial_node_value: Any = _MISSING,
@@ -116,7 +116,7 @@ class BaseLinkedList:
         return addresses
 
     @abstractmethod
-    def append(self, value: Any) -> None:
+    def append(self, value: Any) -> bool:
         """
         Appends a new node with the given value to the end of the list.
         Time complexity: O(n)

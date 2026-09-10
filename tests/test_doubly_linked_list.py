@@ -13,6 +13,21 @@ def dll_123():
     return dll
 
 
+def assert_doubly_links(linked_list):
+    current = linked_list.head
+    previous = None
+    count = 0
+
+    while current:
+        assert current.prev is previous
+        previous = current
+        current = current.next
+        count += 1
+
+    assert previous is linked_list.tail
+    assert count == linked_list.size
+
+
 def test_empty_list_initialization(dll):
     assert dll.size == 0
     assert dll.head is None
@@ -39,6 +54,60 @@ def test_list_append(dll):
     assert dll.size == 2
     assert dll.head.value == 1
     assert dll.tail.value == 2
+    assert_doubly_links(dll)
+
+
+def test_prepend(dll):
+    assert dll.prepend(2) is True
+    assert dll.prepend(1) is True
+
+    assert dll.get_values() == [1, 2]
+    assert dll.head.prev is None
+    assert dll.tail.next is None
+    assert_doubly_links(dll)
+
+
+def test_prepend_values_preserves_order(dll):
+    assert dll.prepend_values([1, 2, 3]) == 3
+
+    assert dll.get_values() == [1, 2, 3]
+    assert_doubly_links(dll)
+
+
+def test_insert_at_head_middle_and_tail(dll):
+    assert dll.insert(0, "b") is True
+    assert dll.insert(0, "a") is True
+    assert dll.insert(2, "d") is True
+    assert dll.insert(2, "c") is True
+
+    assert dll.get_values() == ["a", "b", "c", "d"]
+    assert_doubly_links(dll)
+
+
+def test_insert_rejects_mismatched_value_type():
+    dll = DoublyLinkedList(value_type=int)
+
+    assert dll.insert(0, 1) is True
+    assert dll.insert(1, "2") is False
+    assert dll.get_values() == [1]
+    assert_doubly_links(dll)
+
+
+def test_replace(dll_123):
+    assert dll_123.replace(1, 4) is True
+    assert dll_123.get_values() == [1, 4, 3]
+    assert_doubly_links(dll_123)
+
+
+def test_replace_returns_false_for_invalid_index_and_type():
+    dll = DoublyLinkedList(value_type=int)
+    dll.append_values([1, 2])
+
+    assert dll.replace(-1, 3) is False
+    assert dll.replace(2, 3) is False
+    assert dll.replace(1, "3") is False
+    assert dll.get_values() == [1, 2]
+    assert_doubly_links(dll)
 
 
 def test_contains_returns_false_for_empty_list():
@@ -80,23 +149,73 @@ def test_contains_checks_middle_value_once_for_odd_length_list():
 def test_pop_head(dll_123):
     assert dll_123.size == 3
 
-    dll_123.pop_head()
+    popped_node = dll_123.pop_head()
+    assert popped_node.value == 1
+    assert popped_node.prev is None
+    assert popped_node.next is None
     assert dll_123.size == 2
     assert dll_123.head.value == 2
+    assert dll_123.head.prev is None
+    assert_doubly_links(dll_123)
 
 
 def test_pop_tail(dll_123):
     assert dll_123.size == 3
 
-    dll_123.pop_tail()
+    popped_node = dll_123.pop_tail()
+    assert popped_node.value == 3
+    assert popped_node.prev is None
+    assert popped_node.next is None
     assert dll_123.size == 2
     assert dll_123.tail.value == 2
+    assert dll_123.tail.next is None
+    assert_doubly_links(dll_123)
+
+
+def test_pop_only_node_clears_list():
+    dll = DoublyLinkedList("only")
+
+    popped_node = dll.pop_head()
+
+    assert popped_node.value == "only"
+    assert dll.head is None
+    assert dll.tail is None
+    assert len(dll) == 0
+
+
+def test_remove_head_middle_tail_and_only_node():
+    dll = DoublyLinkedList()
+    dll.append_values(["a", "b", "c", "d"])
+
+    assert dll.remove(0) is True
+    assert dll.get_values() == ["b", "c", "d"]
+    assert_doubly_links(dll)
+
+    assert dll.remove(1) is True
+    assert dll.get_values() == ["b", "d"]
+    assert_doubly_links(dll)
+
+    assert dll.remove(1) is True
+    assert dll.get_values() == ["b"]
+    assert_doubly_links(dll)
+
+    assert dll.remove(0) is True
+    assert dll.head is None
+    assert dll.tail is None
+    assert len(dll) == 0
 
 
 def test_reverse(dll_123):
     dll_123.reverse()
     assert dll_123.head.value == 3
     assert dll_123.tail.value == 1
+    assert_doubly_links(dll_123)
+
+
+def test_create_cycle_is_not_supported(dll_123):
+    assert dll_123.create_cycle(0) is False
+    assert dll_123.get_cycle_start_index() is None
+    assert_doubly_links(dll_123)
 
 
 def test_sort_merge():
@@ -109,6 +228,7 @@ def test_sort_merge():
     assert ll.get_values() == [1, 2, 3, 4, 5]
     assert ll.head.value == 1
     assert ll.tail.value == 5
+    assert_doubly_links(ll)
 
 
 def test_sort_insertion():
@@ -119,6 +239,7 @@ def test_sort_insertion():
     assert ll.get_values() == [1, 2, 3, 4, 5]
     assert ll.head.value == 1
     assert ll.tail.value == 5
+    assert_doubly_links(ll)
 
 
 def test_sort_returns_false_for_invalid_method():
