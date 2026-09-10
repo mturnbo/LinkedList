@@ -241,6 +241,34 @@ class DoublyLinkedList(BaseLinkedList):
         return True
 
 
+    def is_circular(self) -> bool:
+        """
+        Returns True when the tail links to the head and the head links to the tail.
+        Time complexity: O(1)
+        """
+
+        return (
+            self.head is not None
+            and self.tail is not None
+            and self.tail.next is self.head
+            and self.head.prev is self.tail
+        )
+
+
+    def make_linear(self) -> bool:
+        """
+        Breaks a circular doubly linked list and restores linear endpoints.
+        Time complexity: O(1)
+        """
+
+        if not self.is_circular():
+            return False
+
+        self.tail.next = None
+        self.head.prev = None
+        return True
+
+
     def reverse(self):
         """
         Reverses the order of nodes in the list.

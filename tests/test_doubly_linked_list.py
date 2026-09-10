@@ -266,6 +266,31 @@ def test_create_cycle_links_tail_to_head(dll_123):
     assert dll_123.tail.next is dll_123.head
     assert dll_123.head.prev is dll_123.tail
     assert dll_123.get_cycle_start_index() == 0
+    assert dll_123.is_circular() is True
+
+
+def test_is_circular_returns_false_for_linear_doubly_list(dll_123):
+    assert dll_123.is_circular() is False
+
+
+def test_make_linear_breaks_circular_doubly_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert dll_123.make_linear() is True
+
+    assert dll_123.is_circular() is False
+    assert dll_123._has_cycle() is False
+    assert dll_123.tail.next is None
+    assert dll_123.head.prev is None
+    assert_doubly_links(dll_123)
+    assert dll_123.append(4) is True
+    assert dll_123.get_values() == [1, 2, 3, 4]
+    assert_doubly_links(dll_123)
+
+
+def test_make_linear_returns_false_for_linear_doubly_list(dll_123):
+    assert dll_123.make_linear() is False
+    assert_doubly_links(dll_123)
 
 
 def test_mutating_methods_raise_when_list_has_cycle():

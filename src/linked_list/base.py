@@ -243,6 +243,28 @@ class BaseLinkedList(ABC):
         return False
 
 
+    def is_circular(self) -> bool:
+        """
+        Returns True when the tail links directly back to the head.
+        Time complexity: O(1)
+        """
+
+        return self.head is not None and self.tail is not None and self.tail.next is self.head
+
+
+    def make_linear(self) -> bool:
+        """
+        Breaks a tail-originating cycle and restores the list to linear form.
+        Time complexity: O(1)
+        """
+
+        if not self._has_cycle():
+            return False
+
+        self.tail.next = None
+        return True
+
+
     def get_cycle_start_index(self) -> Optional[int]:
         """
         Returns the index of the node where the cycle begins, or None if no cycle.

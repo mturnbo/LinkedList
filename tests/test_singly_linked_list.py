@@ -244,9 +244,44 @@ def test_get_cycle_start_index_methods():
     ll = SinglyLinkedList()
     ll.append_values([1, 2, 3, 4, 5])
     assert ll.get_cycle_start_index() is None
+    assert ll.is_circular() is False
 
     ll.create_cycle(2)
     assert ll.get_cycle_start_index() == 2
+    assert ll.is_circular() is False
+
+
+def test_is_circular_returns_true_for_tail_to_head_cycle():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+
+    ll.create_cycle(0)
+
+    assert ll.is_circular() is True
+
+
+def test_make_linear_breaks_singly_cycle():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+    ll.create_cycle(1)
+
+    assert ll._has_cycle() is True
+    assert ll.make_linear() is True
+
+    assert ll._has_cycle() is False
+    assert ll.is_circular() is False
+    assert ll.tail.next is None
+    assert ll.get_values() == [1, 2, 3]
+    assert ll.append(4) is True
+    assert ll.get_values() == [1, 2, 3, 4]
+
+
+def test_make_linear_returns_false_for_linear_singly_list():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+
+    assert ll.make_linear() is False
+    assert ll.get_values() == [1, 2, 3]
 
 
 def test_mutating_methods_raise_when_list_has_cycle():
