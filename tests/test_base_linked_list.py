@@ -1,7 +1,7 @@
 import pytest
 
 from linked_list.base import BaseLinkedList
-from exceptions import ValueTypeException
+from linked_list.exceptions import ValueTypeException
 
 
 class ConcreteLinkedList(BaseLinkedList):
