@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from linked_list.node import Node
 from typing import Any, Optional
+from exceptions import CycleDetectedException, ValueTypeException
 
 _MISSING = object()
 
@@ -21,9 +22,7 @@ class BaseLinkedList(ABC):
         self.size: int = 0 if initial_node_value is _MISSING else 1
 
         if self.head and not self._accepts_value(self.head.value):
-            raise TypeError(
-                f"Initial node value must be of type {self._value_type_name()}."
-            )
+            raise ValueTypeException(self.head.value, self.value_type)
 
 
     def _is_valid_value_type(self, value_type: type) -> bool:
@@ -35,6 +34,16 @@ class BaseLinkedList(ABC):
             return True
 
         return type(value) is self.value_type
+
+
+    def _validate_value(self, value: Any) -> None:
+        if not self._accepts_value(value):
+            raise ValueTypeException(value, self.value_type)
+
+
+    def _ensure_acyclic(self, operation: str) -> None:
+        if self._has_cycle():
+            raise CycleDetectedException(operation)
 
 
     def _value_type_name(self) -> str:
@@ -128,7 +137,7 @@ class BaseLinkedList(ABC):
         try:
             sorted(values)
         except TypeError:
-            return False
+            raise TypeError("Linked list values are not sortable.")
 
         return True
 
@@ -165,6 +174,9 @@ class BaseLinkedList(ABC):
         Adds multiple new nodes to the end of the linked list.
         Time complexity: O(n)
         """
+        for value in values:
+            self._validate_value(value)
+
         appended_count = 0
         for value in values:
             if self.append(value):
@@ -173,14 +185,15 @@ class BaseLinkedList(ABC):
         return appended_count
 
 
-    def pop_head(self) -> Node | None:
+    def pop_head(self) -> Node:
         """
         Removes and returns the head node.
         Time complexity: O(1)
         """
 
+        self._ensure_acyclic("pop_head")
         if self.head is None:
-            return None
+            raise IndexError("Cannot pop from an empty linked list.")
 
         popped_node = self.head
         self.head = popped_node.next
@@ -192,14 +205,15 @@ class BaseLinkedList(ABC):
         return popped_node
 
 
-    def pop_tail(self) -> Node | None:
+    def pop_tail(self) -> Node:
         """
         Removes and returns the tail node.
         Time complexity: O(n)
         """
 
-        if self.tail is None or self._has_cycle():
-            return None
+        self._ensure_acyclic("pop_tail")
+        if self.tail is None:
+            raise IndexError("Cannot pop from an empty linked list.")
         if self.size == 1:
             return self.pop_head()
 
@@ -290,9 +304,9 @@ class BaseLinkedList(ABC):
         """
 
         if self._has_cycle() or self.tail is None:
-            return False
+            raise IndexError("Cannot create a cycle in an empty linked list.")
         if start < 0 or start >= self.size - 1:
-            return False
+            raise IndexError("Cycle start index out of range.")
 
         start_node = self.get_node(start)
         self.tail.next = start_node

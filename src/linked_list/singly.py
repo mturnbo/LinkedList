@@ -17,8 +17,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("append")
 
         new_node = Node(value)
         if self.head:
@@ -49,8 +49,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("prepend")
 
         new_node = Node(value)
         new_node.next = self.head
@@ -82,8 +82,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("insert")
 
         if index <= 0:
             return self.prepend(value)
@@ -104,12 +104,11 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size or not self._accepts_value(value):
-            return False
+        self._validate_value(value)
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
 
         current_node = self.get_node(index)
-        if current_node is None:
-            return False
 
         current_node.value = value
         return True
@@ -125,7 +124,9 @@ class SinglyLinkedList(BaseLinkedList):
             return False
 
         current_node = self.head
-        while current_node:
+        for _ in range(self.size):
+            if current_node is None:
+                return False
             if current_node.value == value: return True
             current_node = current_node.next
 
@@ -138,11 +139,15 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size: return False
+        self._ensure_acyclic("remove")
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
         if index == 0:
-            return self.pop_head() is not None
+            self.pop_head()
+            return True
         elif index >= self.size - 1:
-            return self.pop_tail() is not None
+            self.pop_tail()
+            return True
         else:
             current_node = self.get_node(index - 1)
             current_node.next = current_node.next.next
@@ -156,7 +161,8 @@ class SinglyLinkedList(BaseLinkedList):
         Reverses the linked list in place.
         Time complexity: O(n)
         """
-        if self.size <= 1: return False
+        self._ensure_acyclic("reverse")
+        if self.size <= 1: return True
 
         current_node = self.head
         prev_node = None
@@ -177,12 +183,12 @@ class SinglyLinkedList(BaseLinkedList):
         method=2: Insertion sort
         """
 
-        if method not in (1, 2) or self._has_cycle():
-            return False
+        if method not in (1, 2):
+            raise ValueError("Method must be 1 (merge) or 2 (insertion).")
+        self._ensure_acyclic("sort")
         if self.size <= 1:
             return True
-        if not self._values_are_sortable():
-            return False
+        self._values_are_sortable()
 
         if method == 1:
             def split(head: Node | None):
@@ -271,6 +277,4 @@ class SinglyLinkedList(BaseLinkedList):
             while self.tail.next:
                 self.tail = self.tail.next
         return True
-
-
 

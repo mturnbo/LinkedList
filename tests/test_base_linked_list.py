@@ -1,12 +1,12 @@
 import pytest
 
 from linked_list.base import BaseLinkedList
+from exceptions import ValueTypeException
 
 
 class ConcreteLinkedList(BaseLinkedList):
     def append(self, value):
-        if not self._accepts_value(value):
-            return False
+        self._validate_value(value)
 
         from linked_list.node import Node
 
@@ -113,8 +113,8 @@ def test_linked_list_enforces_initial_value_type():
 def test_linked_list_rejects_invalid_initial_value_type():
     try:
         ConcreteLinkedList("1", value_type=int)
-    except TypeError as error:
-        assert "Initial node value" in str(error)
+    except ValueTypeException as error:
+        assert "Expected int" in str(error)
     else:
         raise AssertionError("Expected TypeError for mismatched initial value.")
 
@@ -126,3 +126,12 @@ def test_linked_list_rejects_invalid_value_type_config():
         assert "value_type must be" in str(error)
     else:
         raise AssertionError("Expected TypeError for invalid value_type config.")
+
+
+def test_append_values_raises_for_mismatched_value_type():
+    linked_list = ConcreteLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        linked_list.append_values([1, "2", 3])
+
+    assert linked_list.get_values() == []
