@@ -128,6 +128,26 @@ def test_insert_rejects_mismatched_value_type():
     assert_doubly_links(dll)
 
 
+def test_append_values_raises_without_partial_mutation_for_mismatched_value_type():
+    dll = DoublyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        dll.append_values([1, "2", 3])
+
+    assert dll.get_values() == []
+    assert_doubly_links(dll)
+
+
+def test_prepend_values_raises_without_partial_mutation_for_mismatched_value_type():
+    dll = DoublyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        dll.prepend_values([1, "2", 3])
+
+    assert dll.get_values() == []
+    assert_doubly_links(dll)
+
+
 def test_replace(dll_123):
     assert dll_123.replace(1, 4) is True
     assert dll_123.get_values() == [1, 4, 3]
@@ -354,6 +374,60 @@ def test_sort_insertion():
     assert ll.get_values() == [1, 2, 3, 4, 5]
     assert ll.head.value == 1
     assert ll.tail.value == 5
+    assert_doubly_links(ll)
+
+
+def test_sort_reverse():
+    ll = DoublyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(reverse=True) is True
+    assert ll.get_values() == [5, 4, 3, 2, 1]
+    assert ll.head.value == 5
+    assert ll.tail.value == 1
+    assert_doubly_links(ll)
+
+
+def test_sort_with_sort_key():
+    ll = DoublyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort() is True
+    assert ll.get_values() == [high, medium, low]
+    assert_doubly_links(ll)
+
+
+def test_sort_reverse_with_sort_key():
+    ll = DoublyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort(method=2, reverse=True) is True
+    assert ll.get_values() == [low, medium, high]
+    assert_doubly_links(ll)
+
+
+def test_sortable_list_accepts_sortable_values():
+    ll = DoublyLinkedList(value_type=int, sortable=True)
+
+    assert ll.append_values([3, 1, 2]) == 3
+    assert ll.sort() is True
+    assert ll.get_values() == [1, 2, 3]
+    assert_doubly_links(ll)
+
+
+def test_sortable_list_rejects_unsortable_values():
+    ll = DoublyLinkedList(value_type=dict, sortable=True)
+
+    with pytest.raises(TypeError):
+        ll.append({"priority": 1})
+
+    assert ll.get_values() == []
     assert_doubly_links(ll)
 
 

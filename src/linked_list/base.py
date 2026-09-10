@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from linked_list.node import Node
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from exceptions import CycleDetectedException, ValueTypeException
 
 _MISSING = object()
@@ -10,11 +10,19 @@ class BaseLinkedList(ABC):
         self,
         initial_node_value: Any = _MISSING,
         value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
     ):
         if value_type is not None and not self._is_valid_value_type(value_type):
             raise TypeError("value_type must be a type.")
+        if sort_key is not None and not callable(sort_key):
+            raise TypeError("sort_key must be callable.")
+        if sortable and value_type is None and sort_key is None:
+            raise TypeError("sortable lists require value_type or sort_key.")
 
         self.value_type = value_type
+        self.sort_key = sort_key
+        self.sortable = sortable
         self.head: Node | None = (
             Node(initial_node_value) if initial_node_value is not _MISSING else None
         )
@@ -23,6 +31,8 @@ class BaseLinkedList(ABC):
 
         if self.head and not self._accepts_value(self.head.value):
             raise ValueTypeException(self.head.value, self.value_type)
+        if self.head:
+            self._validate_sortable_value(self.head.value)
 
 
     def _is_valid_value_type(self, value_type: type) -> bool:
@@ -39,6 +49,25 @@ class BaseLinkedList(ABC):
     def _validate_value(self, value: Any) -> None:
         if not self._accepts_value(value):
             raise ValueTypeException(value, self.value_type)
+        self._validate_sortable_value(value)
+
+
+    def _sort_value(self, value: Any) -> Any:
+        if self.sort_key is None:
+            return value
+
+        return self.sort_key(value)
+
+
+    def _validate_sortable_value(self, value: Any) -> None:
+        if not self.sortable:
+            return
+
+        try:
+            sort_value = self._sort_value(value)
+            sort_value <= sort_value
+        except TypeError:
+            raise TypeError("Linked list value is not sortable.")
 
 
     def _ensure_acyclic(self, operation: str) -> None:
@@ -82,9 +111,10 @@ class BaseLinkedList(ABC):
             if self.value_type is not None
             else ""
         )
+        sort_label = ", sortable=True" if self.sortable else ""
         return (
             f"{type(self).__name__}(size={self.size}, "
-            f"values={values!r}{type_label})"
+            f"values={values!r}{type_label}{sort_label})"
         )
 
 
@@ -135,7 +165,7 @@ class BaseLinkedList(ABC):
     def _values_are_sortable(self) -> bool:
         values = self.get_values()
         try:
-            sorted(values)
+            sorted(values, key=self._sort_value)
         except TypeError:
             raise TypeError("Linked list values are not sortable.")
 

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
@@ -7,8 +7,15 @@ class DoublyLinkedList(BaseLinkedList):
         self,
         initial_node_value: Any = _MISSING,
         value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
     ):
-        super().__init__(initial_node_value, value_type=value_type)
+        super().__init__(
+            initial_node_value,
+            value_type=value_type,
+            sort_key=sort_key,
+            sortable=sortable,
+        )
 
 
     def get_node(self, index: int) -> Node:
@@ -284,7 +291,7 @@ class DoublyLinkedList(BaseLinkedList):
         return True
 
 
-    def sort(self, method: int = 1) -> bool:
+    def sort(self, method: int = 1, reverse: bool = False) -> bool:
         """
         Sorts the linked list in place.
         method=1: Merge sort
@@ -327,7 +334,7 @@ class DoublyLinkedList(BaseLinkedList):
                         tail = tail.next
                     return left, tail
 
-                if left.value <= right.value:
+                if self._sort_value(left.value) <= self._sort_value(right.value):
                     head = left
                     left = left.next
                 else:
@@ -338,7 +345,7 @@ class DoublyLinkedList(BaseLinkedList):
                 tail.next = None
 
                 while left and right:
-                    if left.value <= right.value:
+                    if self._sort_value(left.value) <= self._sort_value(right.value):
                         tail.next = left
                         left.prev = tail
                         tail = left
@@ -373,6 +380,8 @@ class DoublyLinkedList(BaseLinkedList):
                 self.head.prev = None
             if self.tail:
                 self.tail.next = None
+            if reverse:
+                self.reverse()
             return True
 
         if method == 2:
@@ -386,13 +395,16 @@ class DoublyLinkedList(BaseLinkedList):
                 if sorted_head is None:
                     sorted_head = current
                     sorted_tail = current
-                elif current.value <= sorted_head.value:
+                elif self._sort_value(current.value) <= self._sort_value(sorted_head.value):
                     current.next = sorted_head
                     sorted_head.prev = current
                     sorted_head = current
                 else:
                     search = sorted_head
-                    while search.next and search.next.value <= current.value:
+                    while (
+                        search.next
+                        and self._sort_value(search.next.value) <= self._sort_value(current.value)
+                    ):
                         search = search.next
                     current.next = search.next
                     current.prev = search
@@ -405,4 +417,6 @@ class DoublyLinkedList(BaseLinkedList):
 
             self.head = sorted_head
             self.tail = sorted_tail
+            if reverse:
+                self.reverse()
             return True

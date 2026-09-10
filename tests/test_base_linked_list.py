@@ -81,6 +81,15 @@ def test_repr_includes_value_type_when_configured():
     )
 
 
+def test_repr_includes_sortable_when_configured():
+    linked_list = ConcreteLinkedList(value_type=int, sortable=True)
+    linked_list.append_values([1, 2])
+
+    assert repr(linked_list) == (
+        "ConcreteLinkedList(size=2, values=[1, 2], value_type=int, sortable=True)"
+    )
+
+
 def test_repr_shows_twenty_values_without_ellipsis():
     linked_list = ConcreteLinkedList()
     linked_list.append_values(list(range(20)))
@@ -126,6 +135,21 @@ def test_linked_list_rejects_invalid_value_type_config():
         assert "value_type must be" in str(error)
     else:
         raise AssertionError("Expected TypeError for invalid value_type config.")
+
+
+def test_linked_list_rejects_invalid_sort_key_config():
+    with pytest.raises(TypeError):
+        ConcreteLinkedList(sort_key="value")
+
+
+def test_sortable_list_requires_value_type_or_sort_key():
+    with pytest.raises(TypeError):
+        ConcreteLinkedList(sortable=True)
+
+
+def test_sortable_list_rejects_unsortable_initial_value():
+    with pytest.raises(TypeError):
+        ConcreteLinkedList({"key": "value"}, value_type=dict, sortable=True)
 
 
 def test_append_values_raises_for_mismatched_value_type():

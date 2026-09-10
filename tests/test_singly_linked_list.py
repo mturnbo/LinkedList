@@ -231,6 +231,24 @@ def test_homogeneous_list_rejects_mismatched_values():
     assert linked_list.contains("1") is False
 
 
+def test_append_values_raises_without_partial_mutation_for_mismatched_value_type():
+    linked_list = SinglyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        linked_list.append_values([1, "2", 3])
+
+    assert linked_list.get_values() == []
+
+
+def test_prepend_values_raises_without_partial_mutation_for_mismatched_value_type():
+    linked_list = SinglyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        linked_list.prepend_values([1, "2", 3])
+
+    assert linked_list.get_values() == []
+
+
 def test_contains_accepts_any_value_for_unconstrained_list():
     linked_list = SinglyLinkedList()
     value = {"key": ["nested", "value"]}
@@ -340,6 +358,55 @@ def test_sort_insertion():
     assert ll.get_values() == [1, 2, 3, 4, 5]
     assert ll.head.value == 1
     assert ll.tail.value == 5
+
+
+def test_sort_reverse():
+    ll = SinglyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(reverse=True) is True
+    assert ll.get_values() == [5, 4, 3, 2, 1]
+    assert ll.head.value == 5
+    assert ll.tail.value == 1
+
+
+def test_sort_with_sort_key():
+    ll = SinglyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort() is True
+    assert ll.get_values() == [high, medium, low]
+
+
+def test_sort_reverse_with_sort_key():
+    ll = SinglyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort(method=2, reverse=True) is True
+    assert ll.get_values() == [low, medium, high]
+
+
+def test_sortable_list_accepts_sortable_values():
+    ll = SinglyLinkedList(value_type=int, sortable=True)
+
+    assert ll.append_values([3, 1, 2]) == 3
+    assert ll.sort() is True
+    assert ll.get_values() == [1, 2, 3]
+
+
+def test_sortable_list_rejects_unsortable_values():
+    ll = SinglyLinkedList(value_type=dict, sortable=True)
+
+    with pytest.raises(TypeError):
+        ll.append({"priority": 1})
+
+    assert ll.get_values() == []
 
 
 def test_sort_raises_for_invalid_method():
