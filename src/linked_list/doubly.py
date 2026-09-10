@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
@@ -49,5 +49,49 @@ class DoublyLinkedList(BaseLinkedList):
         self.tail = new_node
         self.size += 1
         return True
+
+
+    def remove(self, index: int):
+        """
+        Removes the node at the specified index.
+        Time complexity: O(n)
+        """
+        if index < 0 or index >= self.size: return False
+        if index == 0:
+            self.head = self.head.next
+            self.head.prev = None
+        elif index >= self.size - 1:
+            self.tail = self.tail.prev
+            self.tail.next = None
+        else:
+            current_node = self.get_node(index -1)
+            next_node = current_node.next.next
+            current_node.next = next_node
+            next_node.prev = current_node
+        self.size -= 1
+        return True
+
+
+    def contains(self, value: Any) -> bool:
+        """
+        Determines if the list contains a node with the specified value.
+        Time complexity: O(n)
+        """
+
+        if not self._accepts_value(value):
+            return False
+
+        forward = self.head
+        backward = self.tail
+
+        for _ in range((self.size + 1) // 2):
+            if forward and forward.value == value:
+                return True
+            if backward and backward.value == value:
+                return True
+            forward = forward.next if forward else None
+            backward = backward.prev if backward else None
+
+        return False
 
 

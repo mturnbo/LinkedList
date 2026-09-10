@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from linked_list.node import Node
 from typing import Any, Optional
 
@@ -103,6 +104,66 @@ class BaseLinkedList:
             current_node = current_node.next
 
         return addresses
+
+    @abstractmethod
+    def append(self, value: Any) -> None:
+        """
+        Appends a new node with the given value to the end of the list.
+        Time complexity: O(n)
+        """
+        pass
+
+
+    def append_values(self, values: list[Any]) -> int:
+        """
+        Adds multiple new nodes to the end of the linked list.
+        Time complexity: O(n)
+        """
+        appended_count = 0
+        for value in values:
+            if self.append(value):
+                appended_count += 1
+
+        return appended_count
+
+
+    def pop_head(self) -> Node | None:
+        """
+        Removes and returns the head node.
+        Time complexity: O(1)
+        """
+
+        if self.head is None:
+            return None
+
+        popped_node = self.head
+        self.head = popped_node.next
+        if self.head is None:
+            self.tail = None
+        popped_node.next = None
+        self.size -= 1
+
+        return popped_node
+
+
+    def pop_tail(self) -> Node | None:
+        """
+        Removes and returns the tail node.
+        Time complexity: O(n)
+        """
+
+        if self.tail is None or self.has_cycle():
+            return None
+        if self.size == 1:
+            return self.pop_head()
+
+        previous_node = self.get_node(self.size - 2)
+        popped_node = self.tail
+        previous_node.next = None
+        self.tail = previous_node
+        self.size -= 1
+
+        return popped_node
 
 
     def has_cycle(self) -> bool:

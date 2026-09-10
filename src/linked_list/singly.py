@@ -121,51 +121,15 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
+        if not self._accepts_value(value):
+            return False
+
         current_node = self.head
         while current_node:
             if current_node.value == value: return True
             current_node = current_node.next
 
         return False
-
-
-    def pop_head(self) -> Node | None:
-        """
-        Removes and returns the head node.
-        Time complexity: O(1)
-        """
-
-        if self.head is None:
-            return None
-
-        popped_node = self.head
-        self.head = popped_node.next
-        if self.head is None:
-            self.tail = None
-        popped_node.next = None
-        self.size -= 1
-
-        return popped_node
-
-
-    def pop_tail(self) -> Node | None:
-        """
-        Removes and returns the tail node.
-        Time complexity: O(n)
-        """
-
-        if self.tail is None or self.has_cycle():
-            return None
-        if self.size == 1:
-            return self.pop_head()
-
-        previous_node = self.get_node(self.size - 2)
-        popped_node = self.tail
-        previous_node.next = None
-        self.tail = previous_node
-        self.size -= 1
-
-        return popped_node
 
 
     def remove(self, index: int) -> bool:

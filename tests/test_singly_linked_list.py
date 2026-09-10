@@ -1,4 +1,103 @@
+import pytest
 from linked_list.singly import SinglyLinkedList
+
+@pytest.fixture(autouse=True)
+def sll():
+    return SinglyLinkedList()
+
+@pytest.fixture(autouse=True)
+def sll_123():
+    dll = SinglyLinkedList()
+    dll.append_values([1,2,3])
+    return dll
+
+
+def test_empty_list_initialization(sll):
+    assert sll.size == 0
+    assert sll.head is None
+    assert sll.tail is None
+
+
+def test_nonempty_list_initialization():
+    initial_value = 123
+    ll = SinglyLinkedList(initial_value)
+    assert ll.size == 1
+    assert ll.head.value == initial_value
+    assert ll.tail.value == initial_value
+    assert ll.head.next is None
+    assert ll.tail.next is None
+
+
+def test_list_append(sll):
+    sll.append(1)
+    assert sll.size == 1
+    assert sll.head.value == 1
+    assert sll.tail.value == 1
+
+    sll.append(2)
+    assert sll.size == 2
+    assert sll.head.value == 1
+    assert sll.tail.value == 2
+
+
+def test_list_multiple_append(sll):
+    vals = [1, 2, 3]
+    for val in vals:
+        sll.append(val)
+        assert sll.head.value == vals[0]
+        assert sll.tail.value == val
+
+    assert sll.size == len(vals)
+
+
+def test_get_node(sll_123):
+    assert sll_123.get_node(1).value == 2
+
+
+def test_insert(sll_123):
+    sll_123.insert(1, 4)
+    assert sll_123.get_node(1).value == 4
+
+
+def test_replace(sll_123):
+    sll_123.replace(1, 4)
+    assert sll_123.get_node(1).value == 4
+
+    sll_123.replace(2, 5)
+    assert sll_123.get_node(2).value == 5
+
+
+def test_pop_head(sll_123):
+    assert sll_123.size == 3
+
+    sll_123.pop_head()
+    assert sll_123.size == 2
+    assert sll_123.head.value == 2
+
+
+def test_pop_tail(sll_123):
+    assert sll_123.size == 3
+
+    sll_123.pop_tail()
+    assert sll_123.size == 2
+    assert sll_123.tail.value == 2
+
+
+def test_contains(sll_123):
+    assert sll_123.contains(1) is True
+    assert sll_123.contains(2) is True
+    assert sll_123.contains(4) is False
+
+
+def test_remove(sll_123):
+    sll_123.remove(1)
+    assert sll_123.size == 2
+
+
+def test_reverse(sll_123):
+    sll_123.reverse()
+    assert sll_123.head.value == 3
+    assert sll_123.tail.value == 1
 
 
 def test_append_and_prepend_accept_any_values():
@@ -96,6 +195,16 @@ def test_homogeneous_list_rejects_mismatched_values():
     assert linked_list.insert(1, 2.0) is False
     assert linked_list.replace(0, "1") is False
     assert linked_list.get_values() == [1]
+    assert linked_list.contains("1") is False
+
+
+def test_contains_accepts_any_value_for_unconstrained_list():
+    linked_list = SinglyLinkedList()
+    value = {"key": ["nested", "value"]}
+    linked_list.append(value)
+
+    assert linked_list.contains({"key": ["nested", "value"]}) is True
+    assert linked_list.contains({"key": ["other"]}) is False
 
 
 def test_get_cycle_start_index_methods():
