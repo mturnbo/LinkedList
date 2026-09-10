@@ -1,9 +1,10 @@
+from abc import ABC, abstractmethod
 from linked_list.node import Node
 from typing import Any, Optional
 
 _MISSING = object()
 
-class BaseLinkedList:
+class BaseLinkedList(ABC):
     def __init__(
         self,
         initial_node_value: Any = _MISSING,
@@ -86,6 +87,16 @@ class BaseLinkedList:
         return values
 
 
+    def _values_are_sortable(self) -> bool:
+        values = self.get_values()
+        try:
+            sorted(values)
+        except TypeError:
+            return False
+
+        return True
+
+
     def get_addresses(self, count: Optional[int] = None) -> list[int]:
         """
         Returns a list of node addresses
@@ -103,6 +114,109 @@ class BaseLinkedList:
             current_node = current_node.next
 
         return addresses
+
+    @abstractmethod
+    def append(self, value: Any) -> bool:
+        """
+        Appends a new node with the given value to the end of the list.
+        Time complexity: O(n)
+        """
+        pass
+
+
+    def append_values(self, values: list[Any]) -> int:
+        """
+        Adds multiple new nodes to the end of the linked list.
+        Time complexity: O(n)
+        """
+        appended_count = 0
+        for value in values:
+            if self.append(value):
+                appended_count += 1
+
+        return appended_count
+
+
+    def pop_head(self) -> Node | None:
+        """
+        Removes and returns the head node.
+        Time complexity: O(1)
+        """
+
+        if self.head is None:
+            return None
+
+        popped_node = self.head
+        self.head = popped_node.next
+        if self.head is None:
+            self.tail = None
+        popped_node.next = None
+        self.size -= 1
+
+        return popped_node
+
+
+    def pop_tail(self) -> Node | None:
+        """
+        Removes and returns the tail node.
+        Time complexity: O(n)
+        """
+
+        if self.tail is None or self._has_cycle():
+            return None
+        if self.size == 1:
+            return self.pop_head()
+
+        previous_node = self.get_node(self.size - 2)
+        popped_node = self.tail
+        previous_node.next = None
+        self.tail = previous_node
+        self.size -= 1
+
+        return popped_node
+
+
+    def _has_cycle(self) -> bool:
+        """
+        Detects if the linked list has a cycle.
+        Floyd's Cycle-Finding Algorithm
+        Time complexity: O(n)
+        """
+
+        fast_runner = slow_runner = self.head
+        while fast_runner and fast_runner.next:
+            fast_runner = fast_runner.next.next
+            slow_runner = slow_runner.next
+            if fast_runner is slow_runner:
+                return True
+
+        return False
+
+
+    def get_cycle_start_index(self) -> Optional[int]:
+        """
+        Returns the index of the node where the cycle begins, or None if no cycle.
+        Floyd's Cycle-Finding Algorithm
+        Time complexity: O(n)
+        """
+
+        fast_runner = slow_runner = self.head
+        while fast_runner and fast_runner.next:
+            fast_runner = fast_runner.next.next
+            slow_runner = slow_runner.next
+            if fast_runner is slow_runner:
+                break
+        else:
+            return None
+
+        slow_runner = self.head
+        index = 0
+        while slow_runner is not fast_runner:
+            slow_runner = slow_runner.next
+            fast_runner = fast_runner.next
+            index += 1
+
+        return index
 
 
     def clear(self, iterate: bool = False) -> bool:
@@ -125,4 +239,25 @@ class BaseLinkedList:
             self.head = self.tail = None
             self.size = 0
 
+        return True
+
+
+    def create_cycle(self, start: int):
+        """
+        Create a cycle in the linked list.
+        Accepts start index.  Start index must be less than tail index.
+        Example:
+        1 → 2 → 3 → 4 → 5
+                ↑       ↓
+                ← ← ← ← ←
+        Time complexity: O(1)
+        """
+
+        if self._has_cycle() or self.tail is None:
+            return False
+        if start < 0 or start >= self.size - 1:
+            return False
+
+        start_node = self.get_node(start)
+        self.tail.next = start_node
         return True

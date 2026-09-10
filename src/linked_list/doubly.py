@@ -1,8 +1,8 @@
-from typing import Any, Optional
+from typing import Any
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
-class SinglyLinkedList(BaseLinkedList):
+class DoublyLinkedList(BaseLinkedList):
     def __init__(
         self,
         initial_node_value: Any = _MISSING,
@@ -11,9 +11,29 @@ class SinglyLinkedList(BaseLinkedList):
         super().__init__(initial_node_value, value_type=value_type)
 
 
+    def get_node(self, index: int):
+        """
+        Retrieves a node at the specified index.
+        Time complexity: O(n)
+        """
+
+        if index <= 0: return self.head
+        if index >= self.size - 1: return self.tail
+
+        if index <= self.size // 2:
+            current_node = self.head
+            for _ in range(index):
+                current_node = current_node.next
+        else:
+            current_node = self.tail
+            for _ in range(self.size - index):
+                current_node = current_node.prev
+
+        return current_node
+
     def append(self, value: Any) -> bool:
         """
-        Adds a new node to the end of the linked list.
+        Appends a new node with the specified value to the end of the list.
         Time complexity: O(1)
         """
 
@@ -23,24 +43,12 @@ class SinglyLinkedList(BaseLinkedList):
         new_node = Node(value)
         if self.head:
             self.tail.next = new_node
+            new_node.prev = self.tail
         else:
             self.head = new_node
         self.tail = new_node
         self.size += 1
         return True
-
-
-    def append_values(self, values: list[Any]) -> int:
-        """
-        Adds multiple new nodes to the end of the linked list.
-        Time complexity: O(n)
-        """
-        appended_count = 0
-        for value in values:
-            if self.append(value):
-                appended_count += 1
-
-        return appended_count
 
 
     def prepend(self, value: Any) -> bool:
@@ -54,7 +62,9 @@ class SinglyLinkedList(BaseLinkedList):
 
         new_node = Node(value)
         new_node.next = self.head
-        if self.head is None:
+        if self.head:
+            self.head.prev = new_node
+        else:
             self.tail = new_node
         self.head = new_node
         self.size += 1
@@ -64,7 +74,7 @@ class SinglyLinkedList(BaseLinkedList):
     def prepend_values(self, values: list[Any]) -> int:
         """
         Adding multiple nodes to the front of the linked list.
-        Preserves order
+        Preserves order.
         Time complexity: O(n)
         """
 
@@ -90,10 +100,11 @@ class SinglyLinkedList(BaseLinkedList):
         if index >= self.size:
             return self.append(value)
 
-        new_node = Node(value)
-        current_node = self.get_node(index - 1)
-        new_node.next = current_node.next
-        current_node.next = new_node
+        previous_node = self.get_node(index - 1)
+        next_node = previous_node.next
+        new_node = Node(value, prev=previous_node, next=next_node)
+        previous_node.next = new_node
+        next_node.prev = new_node
         self.size += 1
         return True
 
@@ -115,58 +126,116 @@ class SinglyLinkedList(BaseLinkedList):
         return True
 
 
-    def contains(self, value: Any) -> bool:
+    def pop_head(self) -> Node | None:
         """
-        Checks if the list contains a node with the specified value.
-        Time complexity: O(n)
+        Removes and returns the head node.
+        Time complexity: O(1)
         """
 
-        if not self._accepts_value(value):
-            return False
+        if self.head is None:
+            return None
 
-        current_node = self.head
-        while current_node:
-            if current_node.value == value: return True
-            current_node = current_node.next
+        popped_node = self.head
+        self.head = popped_node.next
+        if self.head:
+            self.head.prev = None
+        else:
+            self.tail = None
+        popped_node.next = None
+        popped_node.prev = None
+        self.size -= 1
 
-        return False
+        return popped_node
+
+
+    def pop_tail(self) -> Node | None:
+        """
+        Removes and returns the tail node.
+        Time complexity: O(1)
+        """
+
+        if self.tail is None or self._has_cycle():
+            return None
+        if self.size == 1:
+            return self.pop_head()
+
+        popped_node = self.tail
+        self.tail = popped_node.prev
+        self.tail.next = None
+        popped_node.prev = None
+        popped_node.next = None
+        self.size -= 1
+
+        return popped_node
 
 
     def remove(self, index: int) -> bool:
         """
-        Removes a node at the specified index.
+        Removes the node at the specified index.
         Time complexity: O(n)
         """
-
         if index < 0 or index >= self.size: return False
         if index == 0:
             return self.pop_head() is not None
         elif index >= self.size - 1:
             return self.pop_tail() is not None
         else:
-            current_node = self.get_node(index - 1)
-            current_node.next = current_node.next.next
-            self.size -= 1
+            current_node = self.get_node(index -1)
+            next_node = current_node.next.next
+            current_node.next = next_node
+            next_node.prev = current_node
+        self.size -= 1
+        return True
 
+
+    def contains(self, value: Any) -> bool:
+        """
+        Determines if the list contains a node with the specified value.
+        Time complexity: O(n)
+        """
+
+        if not self._accepts_value(value):
+            return False
+
+        forward = self.head
+        backward = self.tail
+
+        for _ in range((self.size + 1) // 2):
+            if forward and forward.value == value:
+                return True
+            if backward and backward.value == value:
+                return True
+            forward = forward.next if forward else None
+            backward = backward.prev if backward else None
+
+        return False
+
+
+    def create_cycle(self, start: int) -> bool:
+        """
+        Creates a circular doubly linked list by linking the tail to the head.
+        Time complexity: O(1)
+        """
+
+        if start != 0 or self.head is None or self.tail is None or self._has_cycle():
+            return False
+
+        self.tail.next = self.head
+        self.head.prev = self.tail
         return True
 
 
     def reverse(self):
         """
-        Reverses the linked list in place.
+        Reverses the order of nodes in the list.
         Time complexity: O(n)
         """
-        if self.size <= 1: return False
 
         current_node = self.head
-        prev_node = None
         while current_node:
-            next_node = current_node.next
-            current_node.next = prev_node
-            prev_node = current_node
-            current_node = next_node
+            current_node.prev, current_node.next = current_node.next, current_node.prev
+            current_node = current_node.prev
         self.head, self.tail = self.tail, self.head
-
         return True
 
 
@@ -197,6 +266,8 @@ class SinglyLinkedList(BaseLinkedList):
                     fast = fast.next.next
                 if prev:
                     prev.next = None
+                if slow:
+                    slow.prev = None
                 return head, slow
 
             def merge(left: Node | None, right: Node | None):
@@ -217,21 +288,26 @@ class SinglyLinkedList(BaseLinkedList):
                 else:
                     head = right
                     right = right.next
+                head.prev = None
                 tail = head
                 tail.next = None
 
                 while left and right:
                     if left.value <= right.value:
                         tail.next = left
+                        left.prev = tail
                         tail = left
                         left = left.next
                     else:
                         tail.next = right
+                        right.prev = tail
                         tail = right
                         right = right.next
                     tail.next = None
 
                 remainder = left if left else right
+                if remainder:
+                    remainder.prev = tail
                 tail.next = remainder
                 while tail.next:
                     tail = tail.next
@@ -241,36 +317,48 @@ class SinglyLinkedList(BaseLinkedList):
                 if head is None or head.next is None:
                     return head, head
                 left, right = split(head)
-                left_head, _ = merge_sort(left)
-                right_head, _ = merge_sort(right)
+                left_head, left_tail = merge_sort(left)
+                right_head, right_tail = merge_sort(right)
                 return merge(left_head, right_head)
 
             head, tail = merge_sort(self.head)
             self.head = head
             self.tail = tail
+            if self.head:
+                self.head.prev = None
+            if self.tail:
+                self.tail.next = None
             return True
 
-        sorted_head = None
-        current = self.head
-        while current:
-            next_node = current.next
-            if sorted_head is None or current.value <= sorted_head.value:
-                current.next = sorted_head
-                sorted_head = current
-            else:
-                search = sorted_head
-                while search.next and search.next.value <= current.value:
-                    search = search.next
-                current.next = search.next
-                search.next = current
-            current = next_node
+        if method == 2:
+            sorted_head = None
+            sorted_tail = None
+            current = self.head
+            while current:
+                next_node = current.next
+                current.prev = None
+                current.next = None
+                if sorted_head is None:
+                    sorted_head = current
+                    sorted_tail = current
+                elif current.value <= sorted_head.value:
+                    current.next = sorted_head
+                    sorted_head.prev = current
+                    sorted_head = current
+                else:
+                    search = sorted_head
+                    while search.next and search.next.value <= current.value:
+                        search = search.next
+                    current.next = search.next
+                    current.prev = search
+                    if search.next:
+                        search.next.prev = current
+                    else:
+                        sorted_tail = current
+                    search.next = current
+                current = next_node
 
-        self.head = sorted_head
-        self.tail = sorted_head
-        if self.tail:
-            while self.tail.next:
-                self.tail = self.tail.next
-        return True
-
-
+            self.head = sorted_head
+            self.tail = sorted_tail
+            return True
 
