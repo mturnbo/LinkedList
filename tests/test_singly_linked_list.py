@@ -1,6 +1,6 @@
 import pytest
 from linked_list.singly import SinglyLinkedList
-from exceptions import CycleDetectedException, ValueTypeException
+from linked_list.exceptions import CycleDetectedException, ValueTypeException
 
 @pytest.fixture(autouse=True)
 def sll():

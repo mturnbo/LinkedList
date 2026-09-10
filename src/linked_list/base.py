@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from linked_list.node import Node
 from typing import Any, Callable, Optional, Self
-from exceptions import CycleDetectedException, ValueTypeException
+from linked_list.exceptions import CycleDetectedException, ValueTypeException
 
 _MISSING = object()
 
