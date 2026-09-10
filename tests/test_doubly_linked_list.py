@@ -212,10 +212,27 @@ def test_reverse(dll_123):
     assert_doubly_links(dll_123)
 
 
-def test_create_cycle_is_not_supported(dll_123):
-    assert dll_123.create_cycle(0) is False
+def test_create_cycle_links_tail_to_head(dll_123):
+    assert dll_123.create_cycle(0) is True
+
+    assert dll_123.tail.next is dll_123.head
+    assert dll_123.head.prev is dll_123.tail
+    assert dll_123.get_cycle_start_index() == 0
+
+
+def test_create_cycle_rejects_non_head_start_index(dll_123):
+    assert dll_123.create_cycle(1) is False
+
+    assert dll_123.tail.next is None
+    assert dll_123.head.prev is None
     assert dll_123.get_cycle_start_index() is None
     assert_doubly_links(dll_123)
+
+
+def test_create_cycle_rejects_empty_list():
+    dll = DoublyLinkedList()
+
+    assert dll.create_cycle(0) is False
 
 
 def test_sort_merge():

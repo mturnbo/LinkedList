@@ -212,8 +212,17 @@ class DoublyLinkedList(BaseLinkedList):
 
 
     def create_cycle(self, start: int) -> bool:
-        """Doubly linked lists do not support forward-only cycles."""
-        return False
+        """
+        Creates a circular doubly linked list by linking the tail to the head.
+        Time complexity: O(1)
+        """
+
+        if start != 0 or self.head is None or self.tail is None or self._has_cycle():
+            return False
+
+        self.tail.next = self.head
+        self.head.prev = self.tail
+        return True
 
 
     def reverse(self):
@@ -352,5 +361,4 @@ class DoublyLinkedList(BaseLinkedList):
             self.head = sorted_head
             self.tail = sorted_tail
             return True
-
 
