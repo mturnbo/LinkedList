@@ -57,6 +57,26 @@ def test_list_append(dll):
     assert_doubly_links(dll)
 
 
+def test_iter_yields_values(dll_123):
+    assert list(dll_123) == [1, 2, 3]
+
+
+def test_iter_yields_values_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert list(dll_123) == [1, 2, 3]
+
+
+def test_repr(dll_123):
+    assert repr(dll_123) == "DoublyLinkedList(size=3, values=[1, 2, 3])"
+
+
+def test_repr_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert repr(dll_123) == "DoublyLinkedList(size=3, values=[1, 2, 3])"
+
+
 def test_get_node_raises_index_error_for_empty_list(dll):
     with pytest.raises(IndexError):
         dll.get_node(0)

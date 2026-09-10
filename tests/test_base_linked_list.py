@@ -5,7 +5,19 @@ from linked_list.base import BaseLinkedList
 
 class ConcreteLinkedList(BaseLinkedList):
     def append(self, value):
-        return False
+        if not self._accepts_value(value):
+            return False
+
+        from linked_list.node import Node
+
+        new_node = Node(value)
+        if self.head:
+            self.tail.next = new_node
+        else:
+            self.head = new_node
+        self.tail = new_node
+        self.size += 1
+        return True
 
 
 def test_linked_list():
@@ -42,6 +54,53 @@ def test_get_node_raises_index_error_for_out_of_bounds_index():
 
     with pytest.raises(IndexError):
         linked_list.get_node(1)
+
+
+def test_iter_yields_values():
+    linked_list = ConcreteLinkedList()
+    linked_list.append_values([1, 2, 3])
+
+    assert list(linked_list) == [1, 2, 3]
+
+
+def test_repr_includes_class_name_size_and_values():
+    linked_list = ConcreteLinkedList()
+    linked_list.append_values([1, "two", None])
+
+    assert repr(linked_list) == (
+        "ConcreteLinkedList(size=3, values=[1, 'two', None])"
+    )
+
+
+def test_repr_includes_value_type_when_configured():
+    linked_list = ConcreteLinkedList(value_type=int)
+    linked_list.append_values([1, 2])
+
+    assert repr(linked_list) == (
+        "ConcreteLinkedList(size=2, values=[1, 2], value_type=int)"
+    )
+
+
+def test_repr_shows_twenty_values_without_ellipsis():
+    linked_list = ConcreteLinkedList()
+    linked_list.append_values(list(range(20)))
+
+    assert repr(linked_list) == (
+        "ConcreteLinkedList(size=20, "
+        "values=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "
+        "10, 11, 12, 13, 14, 15, 16, 17, 18, 19])"
+    )
+
+
+def test_repr_limits_values_to_twenty_with_ellipsis():
+    linked_list = ConcreteLinkedList()
+    linked_list.append_values(list(range(21)))
+
+    assert repr(linked_list) == (
+        "ConcreteLinkedList(size=21, "
+        "values=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "
+        "10, 11, 12, 13, 14, 15, 16, 17, 18, 19, '...'])"
+    )
 
 
 def test_linked_list_enforces_initial_value_type():

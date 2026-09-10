@@ -50,6 +50,14 @@ def test_list_multiple_append(sll):
     assert sll.size == len(vals)
 
 
+def test_iter_yields_values(sll_123):
+    assert list(sll_123) == [1, 2, 3]
+
+
+def test_repr(sll_123):
+    assert repr(sll_123) == "SinglyLinkedList(size=3, values=[1, 2, 3])"
+
+
 def test_get_node(sll_123):
     assert sll_123.get_node(1).value == 2
 

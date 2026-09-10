@@ -48,6 +48,37 @@ class BaseLinkedList(ABC):
         return self.size
 
 
+    def __iter__(self):
+        current_node = self.head
+        for _ in range(self.size):
+            if current_node is None:
+                return
+            yield current_node.value
+            current_node = current_node.next
+
+
+    def __repr__(self):
+        values = []
+        current_node = self.head
+        for _ in range(min(self.size, 20)):
+            if current_node is None:
+                break
+            values.append(current_node.value)
+            current_node = current_node.next
+        if self.size > 20:
+            values.append("...")
+
+        type_label = (
+            f", value_type={self._value_type_name()}"
+            if self.value_type is not None
+            else ""
+        )
+        return (
+            f"{type(self).__name__}(size={self.size}, "
+            f"values={values!r}{type_label})"
+        )
+
+
     def get_node(self, index: int) -> Node:
         """
         Returns node at index.
