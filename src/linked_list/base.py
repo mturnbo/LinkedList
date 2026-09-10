@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from linked_list.node import Node
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Self
 from exceptions import CycleDetectedException, ValueTypeException
 
 _MISSING = object()
@@ -143,6 +143,23 @@ class BaseLinkedList(ABC):
         return id(self.get_node(index))
 
 
+    @classmethod
+    def from_values(
+        cls,
+        values: list[Any],
+        value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
+    ) -> Self:
+        linked_list = cls(
+            value_type=value_type,
+            sort_key=sort_key,
+            sortable=sortable,
+        )
+        linked_list.append_values(values)
+        return linked_list
+
+
     def get_values(self, count: Optional[int] = None) -> list[Any]:
         """
         Returns a list of node values to count size, or head/tail if out of bounds
@@ -160,6 +177,37 @@ class BaseLinkedList(ABC):
             current_node = current_node.next
 
         return values
+
+
+    def to_list(self, count: Optional[int] = None) -> list[Any]:
+        """
+        Returns a list of node values.
+        Time complexity: O(n)
+        """
+
+        return self.get_values(count)
+
+
+    def to_nodes(self, count: Optional[int] = None) -> list[Node]:
+        """
+        Returns a list of nodes.
+        Time complexity: O(n)
+        """
+
+        if count is None:
+            count = self.size
+        if count <= 0:
+            return []
+
+        nodes = []
+        current_node = self.head
+        for _ in range(min(count, self.size)):
+            if current_node is None:
+                break
+            nodes.append(current_node)
+            current_node = current_node.next
+
+        return nodes
 
 
     def _values_are_sortable(self) -> bool:

@@ -63,6 +63,54 @@ def test_iter_yields_values():
     assert list(linked_list) == [1, 2, 3]
 
 
+def test_from_values_builds_list():
+    linked_list = ConcreteLinkedList.from_values([1, 2, 3])
+
+    assert isinstance(linked_list, ConcreteLinkedList)
+    assert linked_list.get_values() == [1, 2, 3]
+
+
+def test_from_values_passes_configuration():
+    linked_list = ConcreteLinkedList.from_values(
+        [3, 1, 2],
+        value_type=int,
+        sortable=True,
+    )
+
+    assert linked_list.value_type is int
+    assert linked_list.sortable is True
+    assert linked_list.to_list() == [3, 1, 2]
+
+
+def test_from_values_raises_without_partial_return_for_invalid_values():
+    with pytest.raises(ValueTypeException):
+        ConcreteLinkedList.from_values([1, "2", 3], value_type=int)
+
+
+def test_to_list_aliases_get_values():
+    linked_list = ConcreteLinkedList.from_values([1, 2, 3])
+
+    assert linked_list.to_list() == linked_list.get_values()
+    assert linked_list.to_list(2) == [1, 2]
+
+
+def test_to_nodes_returns_nodes():
+    linked_list = ConcreteLinkedList.from_values([1, 2, 3])
+
+    nodes = linked_list.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[0] is linked_list.head
+    assert nodes[-1] is linked_list.tail
+
+
+def test_to_nodes_honors_count():
+    linked_list = ConcreteLinkedList.from_values([1, 2, 3])
+
+    assert [node.value for node in linked_list.to_nodes(2)] == [1, 2]
+    assert linked_list.to_nodes(0) == []
+
+
 def test_repr_includes_class_name_size_and_values():
     linked_list = ConcreteLinkedList()
     linked_list.append_values([1, "two", None])

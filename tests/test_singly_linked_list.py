@@ -55,6 +55,22 @@ def test_iter_yields_values(sll_123):
     assert list(sll_123) == [1, 2, 3]
 
 
+def test_from_values_builds_singly_list():
+    linked_list = SinglyLinkedList.from_values([1, 2, 3])
+
+    assert isinstance(linked_list, SinglyLinkedList)
+    assert linked_list.to_list() == [1, 2, 3]
+    assert linked_list.head.value == 1
+    assert linked_list.tail.value == 3
+
+
+def test_to_nodes_returns_singly_nodes(sll_123):
+    nodes = sll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[0].next is nodes[1]
+
+
 def test_repr(sll_123):
     assert repr(sll_123) == "SinglyLinkedList(size=3, values=[1, 2, 3])"
 

@@ -62,6 +62,33 @@ def test_iter_yields_values(dll_123):
     assert list(dll_123) == [1, 2, 3]
 
 
+def test_from_values_builds_doubly_list():
+    linked_list = DoublyLinkedList.from_values([1, 2, 3])
+
+    assert isinstance(linked_list, DoublyLinkedList)
+    assert linked_list.to_list() == [1, 2, 3]
+    assert linked_list.head.value == 1
+    assert linked_list.tail.value == 3
+    assert_doubly_links(linked_list)
+
+
+def test_to_nodes_returns_doubly_nodes(dll_123):
+    nodes = dll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[1].prev is nodes[0]
+    assert nodes[1].next is nodes[2]
+
+
+def test_to_nodes_is_bounded_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    nodes = dll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[-1].next is nodes[0]
+
+
 def test_iter_yields_values_for_circular_list(dll_123):
     dll_123.create_cycle(0)
 
