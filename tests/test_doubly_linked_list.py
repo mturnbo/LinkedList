@@ -57,6 +57,19 @@ def test_list_append(dll):
     assert_doubly_links(dll)
 
 
+def test_get_node_raises_index_error_for_empty_list(dll):
+    with pytest.raises(IndexError):
+        dll.get_node(0)
+
+
+def test_get_node_raises_index_error_for_out_of_bounds_index(dll_123):
+    with pytest.raises(IndexError):
+        dll_123.get_node(-1)
+
+    with pytest.raises(IndexError):
+        dll_123.get_node(3)
+
+
 def test_prepend(dll):
     assert dll.prepend(2) is True
     assert dll.prepend(1) is True

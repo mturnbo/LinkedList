@@ -11,14 +11,19 @@ class DoublyLinkedList(BaseLinkedList):
         super().__init__(initial_node_value, value_type=value_type)
 
 
-    def get_node(self, index: int):
+    def get_node(self, index: int) -> Node:
         """
         Retrieves a node at the specified index.
+        Raises IndexError if index is out of bounds.
         Time complexity: O(n)
         """
 
-        if index <= 0: return self.head
-        if index >= self.size - 1: return self.tail
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
+        if index == 0:
+            return self.head
+        if index == self.size - 1:
+            return self.tail
 
         if index <= self.size // 2:
             current_node = self.head
@@ -361,4 +366,3 @@ class DoublyLinkedList(BaseLinkedList):
             self.head = sorted_head
             self.tail = sorted_tail
             return True
-

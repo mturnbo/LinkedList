@@ -54,6 +54,14 @@ def test_get_node(sll_123):
     assert sll_123.get_node(1).value == 2
 
 
+def test_get_node_raises_index_error_for_out_of_bounds_index(sll_123):
+    with pytest.raises(IndexError):
+        sll_123.get_node(-1)
+
+    with pytest.raises(IndexError):
+        sll_123.get_node(3)
+
+
 def test_insert(sll_123):
     sll_123.insert(1, 4)
     assert sll_123.get_node(1).value == 4

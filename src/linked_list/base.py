@@ -48,14 +48,19 @@ class BaseLinkedList(ABC):
         return self.size
 
 
-    def get_node(self, index: int) -> Node | None:
+    def get_node(self, index: int) -> Node:
         """
-        Returns node at index, or head/tail if out of bounds
+        Returns node at index.
+        Raises IndexError if index is out of bounds.
         Time complexity: O(n)
         """
 
-        if index <= 0: return self.head
-        if index >= self.size - 1: return self.tail
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
+        if index == 0:
+            return self.head
+        if index == self.size - 1:
+            return self.tail
 
         current_node = self.head
         for _ in range(index):

@@ -27,6 +27,23 @@ def test_linked_list_initializes_with_falsy_values():
         assert linked_list.head.value == value
 
 
+def test_get_node_raises_index_error_for_empty_list():
+    linked_list = ConcreteLinkedList()
+
+    with pytest.raises(IndexError):
+        linked_list.get_node(0)
+
+
+def test_get_node_raises_index_error_for_out_of_bounds_index():
+    linked_list = ConcreteLinkedList("head")
+
+    with pytest.raises(IndexError):
+        linked_list.get_node(-1)
+
+    with pytest.raises(IndexError):
+        linked_list.get_node(1)
+
+
 def test_linked_list_enforces_initial_value_type():
     linked_list = ConcreteLinkedList(1, value_type=int)
 
