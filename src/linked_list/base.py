@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from linked_list.node import Node
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Self
+from exceptions import CycleDetectedException, ValueTypeException
 
 _MISSING = object()
 
@@ -9,11 +10,19 @@ class BaseLinkedList(ABC):
         self,
         initial_node_value: Any = _MISSING,
         value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
     ):
         if value_type is not None and not self._is_valid_value_type(value_type):
             raise TypeError("value_type must be a type.")
+        if sort_key is not None and not callable(sort_key):
+            raise TypeError("sort_key must be callable.")
+        if sortable and value_type is None and sort_key is None:
+            raise TypeError("sortable lists require value_type or sort_key.")
 
         self.value_type = value_type
+        self.sort_key = sort_key
+        self.sortable = sortable
         self.head: Node | None = (
             Node(initial_node_value) if initial_node_value is not _MISSING else None
         )
@@ -21,9 +30,9 @@ class BaseLinkedList(ABC):
         self.size: int = 0 if initial_node_value is _MISSING else 1
 
         if self.head and not self._accepts_value(self.head.value):
-            raise TypeError(
-                f"Initial node value must be of type {self._value_type_name()}."
-            )
+            raise ValueTypeException(self.head.value, self.value_type)
+        if self.head:
+            self._validate_sortable_value(self.head.value)
 
 
     def _is_valid_value_type(self, value_type: type) -> bool:
@@ -37,6 +46,35 @@ class BaseLinkedList(ABC):
         return type(value) is self.value_type
 
 
+    def _validate_value(self, value: Any) -> None:
+        if not self._accepts_value(value):
+            raise ValueTypeException(value, self.value_type)
+        self._validate_sortable_value(value)
+
+
+    def _sort_value(self, value: Any) -> Any:
+        if self.sort_key is None:
+            return value
+
+        return self.sort_key(value)
+
+
+    def _validate_sortable_value(self, value: Any) -> None:
+        if not self.sortable:
+            return
+
+        try:
+            sort_value = self._sort_value(value)
+            sort_value <= sort_value
+        except TypeError:
+            raise TypeError("Linked list value is not sortable.")
+
+
+    def _ensure_acyclic(self, operation: str) -> None:
+        if self._has_cycle():
+            raise CycleDetectedException(operation)
+
+
     def _value_type_name(self) -> str:
         if self.value_type is None:
             return "Any"
@@ -48,14 +86,51 @@ class BaseLinkedList(ABC):
         return self.size
 
 
-    def get_node(self, index: int) -> Node | None:
+    def __iter__(self):
+        current_node = self.head
+        for _ in range(self.size):
+            if current_node is None:
+                return
+            yield current_node.value
+            current_node = current_node.next
+
+
+    def __repr__(self):
+        values = []
+        current_node = self.head
+        for _ in range(min(self.size, 20)):
+            if current_node is None:
+                break
+            values.append(current_node.value)
+            current_node = current_node.next
+        if self.size > 20:
+            values.append("...")
+
+        type_label = (
+            f", value_type={self._value_type_name()}"
+            if self.value_type is not None
+            else ""
+        )
+        sort_label = ", sortable=True" if self.sortable else ""
+        return (
+            f"{type(self).__name__}(size={self.size}, "
+            f"values={values!r}{type_label}{sort_label})"
+        )
+
+
+    def get_node(self, index: int) -> Node:
         """
-        Returns node at index, or head/tail if out of bounds
+        Returns node at index.
+        Raises IndexError if index is out of bounds.
         Time complexity: O(n)
         """
 
-        if index <= 0: return self.head
-        if index >= self.size - 1: return self.tail
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
+        if index == 0:
+            return self.head
+        if index == self.size - 1:
+            return self.tail
 
         current_node = self.head
         for _ in range(index):
@@ -66,6 +141,23 @@ class BaseLinkedList(ABC):
 
     def get_node_address(self, index: int) -> int:
         return id(self.get_node(index))
+
+
+    @classmethod
+    def from_values(
+        cls,
+        values: list[Any],
+        value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
+    ) -> Self:
+        linked_list = cls(
+            value_type=value_type,
+            sort_key=sort_key,
+            sortable=sortable,
+        )
+        linked_list.append_values(values)
+        return linked_list
 
 
     def get_values(self, count: Optional[int] = None) -> list[Any]:
@@ -87,12 +179,43 @@ class BaseLinkedList(ABC):
         return values
 
 
+    def to_list(self, count: Optional[int] = None) -> list[Any]:
+        """
+        Returns a list of node values.
+        Time complexity: O(n)
+        """
+
+        return self.get_values(count)
+
+
+    def to_nodes(self, count: Optional[int] = None) -> list[Node]:
+        """
+        Returns a list of nodes.
+        Time complexity: O(n)
+        """
+
+        if count is None:
+            count = self.size
+        if count <= 0:
+            return []
+
+        nodes = []
+        current_node = self.head
+        for _ in range(min(count, self.size)):
+            if current_node is None:
+                break
+            nodes.append(current_node)
+            current_node = current_node.next
+
+        return nodes
+
+
     def _values_are_sortable(self) -> bool:
         values = self.get_values()
         try:
-            sorted(values)
+            sorted(values, key=self._sort_value)
         except TypeError:
-            return False
+            raise TypeError("Linked list values are not sortable.")
 
         return True
 
@@ -129,6 +252,9 @@ class BaseLinkedList(ABC):
         Adds multiple new nodes to the end of the linked list.
         Time complexity: O(n)
         """
+        for value in values:
+            self._validate_value(value)
+
         appended_count = 0
         for value in values:
             if self.append(value):
@@ -137,14 +263,15 @@ class BaseLinkedList(ABC):
         return appended_count
 
 
-    def pop_head(self) -> Node | None:
+    def pop_head(self) -> Node:
         """
         Removes and returns the head node.
         Time complexity: O(1)
         """
 
+        self._ensure_acyclic("pop_head")
         if self.head is None:
-            return None
+            raise IndexError("Cannot pop from an empty linked list.")
 
         popped_node = self.head
         self.head = popped_node.next
@@ -156,14 +283,15 @@ class BaseLinkedList(ABC):
         return popped_node
 
 
-    def pop_tail(self) -> Node | None:
+    def pop_tail(self) -> Node:
         """
         Removes and returns the tail node.
         Time complexity: O(n)
         """
 
-        if self.tail is None or self._has_cycle():
-            return None
+        self._ensure_acyclic("pop_tail")
+        if self.tail is None:
+            raise IndexError("Cannot pop from an empty linked list.")
         if self.size == 1:
             return self.pop_head()
 
@@ -191,6 +319,28 @@ class BaseLinkedList(ABC):
                 return True
 
         return False
+
+
+    def is_circular(self) -> bool:
+        """
+        Returns True when the tail links directly back to the head.
+        Time complexity: O(1)
+        """
+
+        return self.head is not None and self.tail is not None and self.tail.next is self.head
+
+
+    def make_linear(self) -> bool:
+        """
+        Breaks a tail-originating cycle and restores the list to linear form.
+        Time complexity: O(1)
+        """
+
+        if not self._has_cycle():
+            return False
+
+        self.tail.next = None
+        return True
 
 
     def get_cycle_start_index(self) -> Optional[int]:
@@ -254,9 +404,9 @@ class BaseLinkedList(ABC):
         """
 
         if self._has_cycle() or self.tail is None:
-            return False
+            raise IndexError("Cannot create a cycle in an empty linked list.")
         if start < 0 or start >= self.size - 1:
-            return False
+            raise IndexError("Cycle start index out of range.")
 
         start_node = self.get_node(start)
         self.tail.next = start_node

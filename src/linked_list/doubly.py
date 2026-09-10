@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
@@ -7,18 +7,30 @@ class DoublyLinkedList(BaseLinkedList):
         self,
         initial_node_value: Any = _MISSING,
         value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
     ):
-        super().__init__(initial_node_value, value_type=value_type)
+        super().__init__(
+            initial_node_value,
+            value_type=value_type,
+            sort_key=sort_key,
+            sortable=sortable,
+        )
 
 
-    def get_node(self, index: int):
+    def get_node(self, index: int) -> Node:
         """
         Retrieves a node at the specified index.
+        Raises IndexError if index is out of bounds.
         Time complexity: O(n)
         """
 
-        if index <= 0: return self.head
-        if index >= self.size - 1: return self.tail
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
+        if index == 0:
+            return self.head
+        if index == self.size - 1:
+            return self.tail
 
         if index <= self.size // 2:
             current_node = self.head
@@ -37,8 +49,8 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("append")
 
         new_node = Node(value)
         if self.head:
@@ -57,8 +69,8 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("prepend")
 
         new_node = Node(value)
         new_node.next = self.head
@@ -78,6 +90,9 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
+        for value in values:
+            self._validate_value(value)
+
         prepended_count = 0
         for value in values[::-1]:
             if self.prepend(value):
@@ -92,8 +107,8 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("insert")
 
         if index <= 0:
             return self.prepend(value)
@@ -115,25 +130,25 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size or not self._accepts_value(value):
-            return False
+        self._validate_value(value)
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
 
         current_node = self.get_node(index)
-        if current_node is None:
-            return False
 
         current_node.value = value
         return True
 
 
-    def pop_head(self) -> Node | None:
+    def pop_head(self) -> Node:
         """
         Removes and returns the head node.
         Time complexity: O(1)
         """
 
+        self._ensure_acyclic("pop_head")
         if self.head is None:
-            return None
+            raise IndexError("Cannot pop from an empty linked list.")
 
         popped_node = self.head
         self.head = popped_node.next
@@ -148,14 +163,15 @@ class DoublyLinkedList(BaseLinkedList):
         return popped_node
 
 
-    def pop_tail(self) -> Node | None:
+    def pop_tail(self) -> Node:
         """
         Removes and returns the tail node.
         Time complexity: O(1)
         """
 
-        if self.tail is None or self._has_cycle():
-            return None
+        self._ensure_acyclic("pop_tail")
+        if self.tail is None:
+            raise IndexError("Cannot pop from an empty linked list.")
         if self.size == 1:
             return self.pop_head()
 
@@ -174,11 +190,15 @@ class DoublyLinkedList(BaseLinkedList):
         Removes the node at the specified index.
         Time complexity: O(n)
         """
-        if index < 0 or index >= self.size: return False
+        self._ensure_acyclic("remove")
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
         if index == 0:
-            return self.pop_head() is not None
+            self.pop_head()
+            return True
         elif index >= self.size - 1:
-            return self.pop_tail() is not None
+            self.pop_tail()
+            return True
         else:
             current_node = self.get_node(index -1)
             next_node = current_node.next.next
@@ -217,11 +237,42 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if start != 0 or self.head is None or self.tail is None or self._has_cycle():
-            return False
+        if start != 0:
+            raise IndexError("Circular doubly linked lists must start at index 0.")
+        if self.head is None or self.tail is None:
+            raise IndexError("Cannot create a cycle in an empty linked list.")
+        self._ensure_acyclic("create_cycle")
 
         self.tail.next = self.head
         self.head.prev = self.tail
+        return True
+
+
+    def is_circular(self) -> bool:
+        """
+        Returns True when the tail links to the head and the head links to the tail.
+        Time complexity: O(1)
+        """
+
+        return (
+            self.head is not None
+            and self.tail is not None
+            and self.tail.next is self.head
+            and self.head.prev is self.tail
+        )
+
+
+    def make_linear(self) -> bool:
+        """
+        Breaks a circular doubly linked list and restores linear endpoints.
+        Time complexity: O(1)
+        """
+
+        if not self.is_circular():
+            return False
+
+        self.tail.next = None
+        self.head.prev = None
         return True
 
 
@@ -231,6 +282,7 @@ class DoublyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
+        self._ensure_acyclic("reverse")
         current_node = self.head
         while current_node:
             current_node.prev, current_node.next = current_node.next, current_node.prev
@@ -239,19 +291,19 @@ class DoublyLinkedList(BaseLinkedList):
         return True
 
 
-    def sort(self, method: int = 1) -> bool:
+    def sort(self, method: int = 1, reverse: bool = False) -> bool:
         """
         Sorts the linked list in place.
         method=1: Merge sort
         method=2: Insertion sort
         """
 
-        if method not in (1, 2) or self._has_cycle():
-            return False
+        if method not in (1, 2):
+            raise ValueError("Method must be 1 (merge) or 2 (insertion).")
+        self._ensure_acyclic("sort")
         if self.size <= 1:
             return True
-        if not self._values_are_sortable():
-            return False
+        self._values_are_sortable()
 
         if method == 1:
             def split(head: Node | None):
@@ -282,7 +334,7 @@ class DoublyLinkedList(BaseLinkedList):
                         tail = tail.next
                     return left, tail
 
-                if left.value <= right.value:
+                if self._sort_value(left.value) <= self._sort_value(right.value):
                     head = left
                     left = left.next
                 else:
@@ -293,7 +345,7 @@ class DoublyLinkedList(BaseLinkedList):
                 tail.next = None
 
                 while left and right:
-                    if left.value <= right.value:
+                    if self._sort_value(left.value) <= self._sort_value(right.value):
                         tail.next = left
                         left.prev = tail
                         tail = left
@@ -328,6 +380,8 @@ class DoublyLinkedList(BaseLinkedList):
                 self.head.prev = None
             if self.tail:
                 self.tail.next = None
+            if reverse:
+                self.reverse()
             return True
 
         if method == 2:
@@ -341,13 +395,16 @@ class DoublyLinkedList(BaseLinkedList):
                 if sorted_head is None:
                     sorted_head = current
                     sorted_tail = current
-                elif current.value <= sorted_head.value:
+                elif self._sort_value(current.value) <= self._sort_value(sorted_head.value):
                     current.next = sorted_head
                     sorted_head.prev = current
                     sorted_head = current
                 else:
                     search = sorted_head
-                    while search.next and search.next.value <= current.value:
+                    while (
+                        search.next
+                        and self._sort_value(search.next.value) <= self._sort_value(current.value)
+                    ):
                         search = search.next
                     current.next = search.next
                     current.prev = search
@@ -360,5 +417,6 @@ class DoublyLinkedList(BaseLinkedList):
 
             self.head = sorted_head
             self.tail = sorted_tail
+            if reverse:
+                self.reverse()
             return True
-

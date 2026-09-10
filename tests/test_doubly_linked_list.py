@@ -1,5 +1,6 @@
 import pytest
 from linked_list.doubly import DoublyLinkedList
+from exceptions import CycleDetectedException, ValueTypeException
 
 @pytest.fixture(autouse=True)
 def dll():
@@ -57,6 +58,66 @@ def test_list_append(dll):
     assert_doubly_links(dll)
 
 
+def test_iter_yields_values(dll_123):
+    assert list(dll_123) == [1, 2, 3]
+
+
+def test_from_values_builds_doubly_list():
+    linked_list = DoublyLinkedList.from_values([1, 2, 3])
+
+    assert isinstance(linked_list, DoublyLinkedList)
+    assert linked_list.to_list() == [1, 2, 3]
+    assert linked_list.head.value == 1
+    assert linked_list.tail.value == 3
+    assert_doubly_links(linked_list)
+
+
+def test_to_nodes_returns_doubly_nodes(dll_123):
+    nodes = dll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[1].prev is nodes[0]
+    assert nodes[1].next is nodes[2]
+
+
+def test_to_nodes_is_bounded_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    nodes = dll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[-1].next is nodes[0]
+
+
+def test_iter_yields_values_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert list(dll_123) == [1, 2, 3]
+
+
+def test_repr(dll_123):
+    assert repr(dll_123) == "DoublyLinkedList(size=3, values=[1, 2, 3])"
+
+
+def test_repr_for_circular_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert repr(dll_123) == "DoublyLinkedList(size=3, values=[1, 2, 3])"
+
+
+def test_get_node_raises_index_error_for_empty_list(dll):
+    with pytest.raises(IndexError):
+        dll.get_node(0)
+
+
+def test_get_node_raises_index_error_for_out_of_bounds_index(dll_123):
+    with pytest.raises(IndexError):
+        dll_123.get_node(-1)
+
+    with pytest.raises(IndexError):
+        dll_123.get_node(3)
+
+
 def test_prepend(dll):
     assert dll.prepend(2) is True
     assert dll.prepend(1) is True
@@ -88,8 +149,29 @@ def test_insert_rejects_mismatched_value_type():
     dll = DoublyLinkedList(value_type=int)
 
     assert dll.insert(0, 1) is True
-    assert dll.insert(1, "2") is False
+    with pytest.raises(ValueTypeException):
+        dll.insert(1, "2")
     assert dll.get_values() == [1]
+    assert_doubly_links(dll)
+
+
+def test_append_values_raises_without_partial_mutation_for_mismatched_value_type():
+    dll = DoublyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        dll.append_values([1, "2", 3])
+
+    assert dll.get_values() == []
+    assert_doubly_links(dll)
+
+
+def test_prepend_values_raises_without_partial_mutation_for_mismatched_value_type():
+    dll = DoublyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        dll.prepend_values([1, "2", 3])
+
+    assert dll.get_values() == []
     assert_doubly_links(dll)
 
 
@@ -99,13 +181,16 @@ def test_replace(dll_123):
     assert_doubly_links(dll_123)
 
 
-def test_replace_returns_false_for_invalid_index_and_type():
+def test_replace_raises_for_invalid_index_and_type():
     dll = DoublyLinkedList(value_type=int)
     dll.append_values([1, 2])
 
-    assert dll.replace(-1, 3) is False
-    assert dll.replace(2, 3) is False
-    assert dll.replace(1, "3") is False
+    with pytest.raises(IndexError):
+        dll.replace(-1, 3)
+    with pytest.raises(IndexError):
+        dll.replace(2, 3)
+    with pytest.raises(ValueTypeException):
+        dll.replace(1, "3")
     assert dll.get_values() == [1, 2]
     assert_doubly_links(dll)
 
@@ -172,6 +257,16 @@ def test_pop_tail(dll_123):
     assert_doubly_links(dll_123)
 
 
+def test_pop_raises_for_empty_list():
+    dll = DoublyLinkedList()
+
+    with pytest.raises(IndexError):
+        dll.pop_head()
+
+    with pytest.raises(IndexError):
+        dll.pop_tail()
+
+
 def test_pop_only_node_clears_list():
     dll = DoublyLinkedList("only")
 
@@ -218,10 +313,59 @@ def test_create_cycle_links_tail_to_head(dll_123):
     assert dll_123.tail.next is dll_123.head
     assert dll_123.head.prev is dll_123.tail
     assert dll_123.get_cycle_start_index() == 0
+    assert dll_123.is_circular() is True
 
 
-def test_create_cycle_rejects_non_head_start_index(dll_123):
-    assert dll_123.create_cycle(1) is False
+def test_is_circular_returns_false_for_linear_doubly_list(dll_123):
+    assert dll_123.is_circular() is False
+
+
+def test_make_linear_breaks_circular_doubly_list(dll_123):
+    dll_123.create_cycle(0)
+
+    assert dll_123.make_linear() is True
+
+    assert dll_123.is_circular() is False
+    assert dll_123._has_cycle() is False
+    assert dll_123.tail.next is None
+    assert dll_123.head.prev is None
+    assert_doubly_links(dll_123)
+    assert dll_123.append(4) is True
+    assert dll_123.get_values() == [1, 2, 3, 4]
+    assert_doubly_links(dll_123)
+
+
+def test_make_linear_returns_false_for_linear_doubly_list(dll_123):
+    assert dll_123.make_linear() is False
+    assert_doubly_links(dll_123)
+
+
+def test_mutating_methods_raise_when_list_has_cycle():
+    dll = DoublyLinkedList()
+    dll.append_values([1, 2, 3])
+    dll.create_cycle(0)
+
+    with pytest.raises(CycleDetectedException):
+        dll.append(4)
+    with pytest.raises(CycleDetectedException):
+        dll.prepend(0)
+    with pytest.raises(CycleDetectedException):
+        dll.insert(1, 4)
+    with pytest.raises(CycleDetectedException):
+        dll.pop_head()
+    with pytest.raises(CycleDetectedException):
+        dll.pop_tail()
+    with pytest.raises(CycleDetectedException):
+        dll.remove(1)
+    with pytest.raises(CycleDetectedException):
+        dll.reverse()
+    with pytest.raises(CycleDetectedException):
+        dll.sort()
+
+
+def test_create_cycle_raises_for_non_head_start_index(dll_123):
+    with pytest.raises(IndexError):
+        dll_123.create_cycle(1)
 
     assert dll_123.tail.next is None
     assert dll_123.head.prev is None
@@ -229,10 +373,11 @@ def test_create_cycle_rejects_non_head_start_index(dll_123):
     assert_doubly_links(dll_123)
 
 
-def test_create_cycle_rejects_empty_list():
+def test_create_cycle_raises_for_empty_list():
     dll = DoublyLinkedList()
 
-    assert dll.create_cycle(0) is False
+    with pytest.raises(IndexError):
+        dll.create_cycle(0)
 
 
 def test_sort_merge():
@@ -259,19 +404,75 @@ def test_sort_insertion():
     assert_doubly_links(ll)
 
 
-def test_sort_returns_false_for_invalid_method():
+def test_sort_reverse():
+    ll = DoublyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(reverse=True) is True
+    assert ll.get_values() == [5, 4, 3, 2, 1]
+    assert ll.head.value == 5
+    assert ll.tail.value == 1
+    assert_doubly_links(ll)
+
+
+def test_sort_with_sort_key():
+    ll = DoublyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort() is True
+    assert ll.get_values() == [high, medium, low]
+    assert_doubly_links(ll)
+
+
+def test_sort_reverse_with_sort_key():
+    ll = DoublyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort(method=2, reverse=True) is True
+    assert ll.get_values() == [low, medium, high]
+    assert_doubly_links(ll)
+
+
+def test_sortable_list_accepts_sortable_values():
+    ll = DoublyLinkedList(value_type=int, sortable=True)
+
+    assert ll.append_values([3, 1, 2]) == 3
+    assert ll.sort() is True
+    assert ll.get_values() == [1, 2, 3]
+    assert_doubly_links(ll)
+
+
+def test_sortable_list_rejects_unsortable_values():
+    ll = DoublyLinkedList(value_type=dict, sortable=True)
+
+    with pytest.raises(TypeError):
+        ll.append({"priority": 1})
+
+    assert ll.get_values() == []
+    assert_doubly_links(ll)
+
+
+def test_sort_raises_for_invalid_method():
     ll = DoublyLinkedList()
     ll.append_values([2, 1])
 
-    assert ll.sort(method=3) is False
+    with pytest.raises(ValueError):
+        ll.sort(method=3)
     assert ll.get_values() == [2, 1]
 
 
-def test_sort_returns_false_without_mutation_for_mixed_unsortable_values():
+def test_sort_raises_without_mutation_for_mixed_unsortable_values():
     ll = DoublyLinkedList()
     ll.append_values([2, "1", 3])
 
-    assert ll.sort(method=1) is False
+    with pytest.raises(TypeError):
+        ll.sort(method=1)
     assert ll.get_values() == [2, "1", 3]
     assert ll.tail.value == 3
 

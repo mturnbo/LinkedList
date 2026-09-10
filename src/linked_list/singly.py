@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Callable
 from linked_list.node import Node
 from linked_list.base import BaseLinkedList, _MISSING
 
@@ -7,8 +7,15 @@ class SinglyLinkedList(BaseLinkedList):
         self,
         initial_node_value: Any = _MISSING,
         value_type: type | None = None,
+        sort_key: Callable[[Any], Any] | None = None,
+        sortable: bool = False,
     ):
-        super().__init__(initial_node_value, value_type=value_type)
+        super().__init__(
+            initial_node_value,
+            value_type=value_type,
+            sort_key=sort_key,
+            sortable=sortable,
+        )
 
 
     def append(self, value: Any) -> bool:
@@ -17,8 +24,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("append")
 
         new_node = Node(value)
         if self.head:
@@ -35,6 +42,9 @@ class SinglyLinkedList(BaseLinkedList):
         Adds multiple new nodes to the end of the linked list.
         Time complexity: O(n)
         """
+        for value in values:
+            self._validate_value(value)
+
         appended_count = 0
         for value in values:
             if self.append(value):
@@ -49,8 +59,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(1)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("prepend")
 
         new_node = Node(value)
         new_node.next = self.head
@@ -68,6 +78,9 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
+        for value in values:
+            self._validate_value(value)
+
         prepended_count = 0
         for value in values[::-1]:
             if self.prepend(value):
@@ -82,8 +95,8 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if not self._accepts_value(value) or self._has_cycle():
-            return False
+        self._validate_value(value)
+        self._ensure_acyclic("insert")
 
         if index <= 0:
             return self.prepend(value)
@@ -104,12 +117,11 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size or not self._accepts_value(value):
-            return False
+        self._validate_value(value)
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
 
         current_node = self.get_node(index)
-        if current_node is None:
-            return False
 
         current_node.value = value
         return True
@@ -125,7 +137,9 @@ class SinglyLinkedList(BaseLinkedList):
             return False
 
         current_node = self.head
-        while current_node:
+        for _ in range(self.size):
+            if current_node is None:
+                return False
             if current_node.value == value: return True
             current_node = current_node.next
 
@@ -138,11 +152,15 @@ class SinglyLinkedList(BaseLinkedList):
         Time complexity: O(n)
         """
 
-        if index < 0 or index >= self.size: return False
+        self._ensure_acyclic("remove")
+        if index < 0 or index >= self.size:
+            raise IndexError("Linked list index out of range.")
         if index == 0:
-            return self.pop_head() is not None
+            self.pop_head()
+            return True
         elif index >= self.size - 1:
-            return self.pop_tail() is not None
+            self.pop_tail()
+            return True
         else:
             current_node = self.get_node(index - 1)
             current_node.next = current_node.next.next
@@ -156,7 +174,8 @@ class SinglyLinkedList(BaseLinkedList):
         Reverses the linked list in place.
         Time complexity: O(n)
         """
-        if self.size <= 1: return False
+        self._ensure_acyclic("reverse")
+        if self.size <= 1: return True
 
         current_node = self.head
         prev_node = None
@@ -170,19 +189,19 @@ class SinglyLinkedList(BaseLinkedList):
         return True
 
 
-    def sort(self, method: int = 1) -> bool:
+    def sort(self, method: int = 1, reverse: bool = False) -> bool:
         """
         Sorts the linked list in place.
         method=1: Merge sort
         method=2: Insertion sort
         """
 
-        if method not in (1, 2) or self._has_cycle():
-            return False
+        if method not in (1, 2):
+            raise ValueError("Method must be 1 (merge) or 2 (insertion).")
+        self._ensure_acyclic("sort")
         if self.size <= 1:
             return True
-        if not self._values_are_sortable():
-            return False
+        self._values_are_sortable()
 
         if method == 1:
             def split(head: Node | None):
@@ -211,7 +230,7 @@ class SinglyLinkedList(BaseLinkedList):
                         tail = tail.next
                     return left, tail
 
-                if left.value <= right.value:
+                if self._sort_value(left.value) <= self._sort_value(right.value):
                     head = left
                     left = left.next
                 else:
@@ -221,7 +240,7 @@ class SinglyLinkedList(BaseLinkedList):
                 tail.next = None
 
                 while left and right:
-                    if left.value <= right.value:
+                    if self._sort_value(left.value) <= self._sort_value(right.value):
                         tail.next = left
                         tail = left
                         left = left.next
@@ -248,18 +267,26 @@ class SinglyLinkedList(BaseLinkedList):
             head, tail = merge_sort(self.head)
             self.head = head
             self.tail = tail
+            if reverse:
+                self.reverse()
             return True
 
         sorted_head = None
         current = self.head
         while current:
             next_node = current.next
-            if sorted_head is None or current.value <= sorted_head.value:
+            if (
+                sorted_head is None
+                or self._sort_value(current.value) <= self._sort_value(sorted_head.value)
+            ):
                 current.next = sorted_head
                 sorted_head = current
             else:
                 search = sorted_head
-                while search.next and search.next.value <= current.value:
+                while (
+                    search.next
+                    and self._sort_value(search.next.value) <= self._sort_value(current.value)
+                ):
                     search = search.next
                 current.next = search.next
                 search.next = current
@@ -270,7 +297,6 @@ class SinglyLinkedList(BaseLinkedList):
         if self.tail:
             while self.tail.next:
                 self.tail = self.tail.next
+        if reverse:
+            self.reverse()
         return True
-
-
-

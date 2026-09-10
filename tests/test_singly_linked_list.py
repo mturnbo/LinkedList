@@ -1,5 +1,6 @@
 import pytest
 from linked_list.singly import SinglyLinkedList
+from exceptions import CycleDetectedException, ValueTypeException
 
 @pytest.fixture(autouse=True)
 def sll():
@@ -50,8 +51,40 @@ def test_list_multiple_append(sll):
     assert sll.size == len(vals)
 
 
+def test_iter_yields_values(sll_123):
+    assert list(sll_123) == [1, 2, 3]
+
+
+def test_from_values_builds_singly_list():
+    linked_list = SinglyLinkedList.from_values([1, 2, 3])
+
+    assert isinstance(linked_list, SinglyLinkedList)
+    assert linked_list.to_list() == [1, 2, 3]
+    assert linked_list.head.value == 1
+    assert linked_list.tail.value == 3
+
+
+def test_to_nodes_returns_singly_nodes(sll_123):
+    nodes = sll_123.to_nodes()
+
+    assert [node.value for node in nodes] == [1, 2, 3]
+    assert nodes[0].next is nodes[1]
+
+
+def test_repr(sll_123):
+    assert repr(sll_123) == "SinglyLinkedList(size=3, values=[1, 2, 3])"
+
+
 def test_get_node(sll_123):
     assert sll_123.get_node(1).value == 2
+
+
+def test_get_node_raises_index_error_for_out_of_bounds_index(sll_123):
+    with pytest.raises(IndexError):
+        sll_123.get_node(-1)
+
+    with pytest.raises(IndexError):
+        sll_123.get_node(3)
 
 
 def test_insert(sll_123):
@@ -81,6 +114,16 @@ def test_pop_tail(sll_123):
     sll_123.pop_tail()
     assert sll_123.size == 2
     assert sll_123.tail.value == 2
+
+
+def test_pop_raises_for_empty_list():
+    linked_list = SinglyLinkedList()
+
+    with pytest.raises(IndexError):
+        linked_list.pop_head()
+
+    with pytest.raises(IndexError):
+        linked_list.pop_tail()
 
 
 def test_contains(sll_123):
@@ -120,12 +163,14 @@ def test_insert_returns_true_for_boundary_insertions():
     assert linked_list.get_values() == ["head", "tail"]
 
 
-def test_replace_returns_false_for_invalid_index():
+def test_replace_raises_for_invalid_index():
     linked_list = SinglyLinkedList()
     linked_list.append_values(["a", "b"])
 
-    assert linked_list.replace(-1, "x") is False
-    assert linked_list.replace(2, "x") is False
+    with pytest.raises(IndexError):
+        linked_list.replace(-1, "x")
+    with pytest.raises(IndexError):
+        linked_list.replace(2, "x")
     assert linked_list.replace(1, "x") is True
     assert linked_list.get_values() == ["a", "x"]
 
@@ -190,12 +235,34 @@ def test_homogeneous_list_rejects_mismatched_values():
     linked_list = SinglyLinkedList(value_type=int)
 
     assert linked_list.append(1) is True
-    assert linked_list.append("2") is False
-    assert linked_list.prepend(False) is False
-    assert linked_list.insert(1, 2.0) is False
-    assert linked_list.replace(0, "1") is False
+    with pytest.raises(ValueTypeException):
+        linked_list.append("2")
+    with pytest.raises(ValueTypeException):
+        linked_list.prepend(False)
+    with pytest.raises(ValueTypeException):
+        linked_list.insert(1, 2.0)
+    with pytest.raises(ValueTypeException):
+        linked_list.replace(0, "1")
     assert linked_list.get_values() == [1]
     assert linked_list.contains("1") is False
+
+
+def test_append_values_raises_without_partial_mutation_for_mismatched_value_type():
+    linked_list = SinglyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        linked_list.append_values([1, "2", 3])
+
+    assert linked_list.get_values() == []
+
+
+def test_prepend_values_raises_without_partial_mutation_for_mismatched_value_type():
+    linked_list = SinglyLinkedList(value_type=int)
+
+    with pytest.raises(ValueTypeException):
+        linked_list.prepend_values([1, "2", 3])
+
+    assert linked_list.get_values() == []
 
 
 def test_contains_accepts_any_value_for_unconstrained_list():
@@ -211,18 +278,79 @@ def test_get_cycle_start_index_methods():
     ll = SinglyLinkedList()
     ll.append_values([1, 2, 3, 4, 5])
     assert ll.get_cycle_start_index() is None
+    assert ll.is_circular() is False
 
     ll.create_cycle(2)
     assert ll.get_cycle_start_index() == 2
+    assert ll.is_circular() is False
 
 
-def test_create_cycle_rejects_invalid_start_index():
+def test_is_circular_returns_true_for_tail_to_head_cycle():
     ll = SinglyLinkedList()
     ll.append_values([1, 2, 3])
 
-    assert ll.create_cycle(-1) is False
-    assert ll.create_cycle(2) is False
-    assert ll.create_cycle(3) is False
+    ll.create_cycle(0)
+
+    assert ll.is_circular() is True
+
+
+def test_make_linear_breaks_singly_cycle():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+    ll.create_cycle(1)
+
+    assert ll._has_cycle() is True
+    assert ll.make_linear() is True
+
+    assert ll._has_cycle() is False
+    assert ll.is_circular() is False
+    assert ll.tail.next is None
+    assert ll.get_values() == [1, 2, 3]
+    assert ll.append(4) is True
+    assert ll.get_values() == [1, 2, 3, 4]
+
+
+def test_make_linear_returns_false_for_linear_singly_list():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+
+    assert ll.make_linear() is False
+    assert ll.get_values() == [1, 2, 3]
+
+
+def test_mutating_methods_raise_when_list_has_cycle():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+    ll.create_cycle(0)
+
+    with pytest.raises(CycleDetectedException):
+        ll.append(4)
+    with pytest.raises(CycleDetectedException):
+        ll.prepend(0)
+    with pytest.raises(CycleDetectedException):
+        ll.insert(1, 4)
+    with pytest.raises(CycleDetectedException):
+        ll.pop_head()
+    with pytest.raises(CycleDetectedException):
+        ll.pop_tail()
+    with pytest.raises(CycleDetectedException):
+        ll.remove(1)
+    with pytest.raises(CycleDetectedException):
+        ll.reverse()
+    with pytest.raises(CycleDetectedException):
+        ll.sort()
+
+
+def test_create_cycle_raises_for_invalid_start_index():
+    ll = SinglyLinkedList()
+    ll.append_values([1, 2, 3])
+
+    with pytest.raises(IndexError):
+        ll.create_cycle(-1)
+    with pytest.raises(IndexError):
+        ll.create_cycle(2)
+    with pytest.raises(IndexError):
+        ll.create_cycle(3)
     assert ll._has_cycle() is False
 
 
@@ -248,19 +376,70 @@ def test_sort_insertion():
     assert ll.tail.value == 5
 
 
-def test_sort_returns_false_for_invalid_method():
+def test_sort_reverse():
+    ll = SinglyLinkedList()
+    ll.append_values([4, 2, 5, 1, 3])
+
+    assert ll.sort(reverse=True) is True
+    assert ll.get_values() == [5, 4, 3, 2, 1]
+    assert ll.head.value == 5
+    assert ll.tail.value == 1
+
+
+def test_sort_with_sort_key():
+    ll = SinglyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort() is True
+    assert ll.get_values() == [high, medium, low]
+
+
+def test_sort_reverse_with_sort_key():
+    ll = SinglyLinkedList(sort_key=lambda item: item["priority"])
+    low = {"name": "low", "priority": 3}
+    high = {"name": "high", "priority": 1}
+    medium = {"name": "medium", "priority": 2}
+    ll.append_values([low, high, medium])
+
+    assert ll.sort(method=2, reverse=True) is True
+    assert ll.get_values() == [low, medium, high]
+
+
+def test_sortable_list_accepts_sortable_values():
+    ll = SinglyLinkedList(value_type=int, sortable=True)
+
+    assert ll.append_values([3, 1, 2]) == 3
+    assert ll.sort() is True
+    assert ll.get_values() == [1, 2, 3]
+
+
+def test_sortable_list_rejects_unsortable_values():
+    ll = SinglyLinkedList(value_type=dict, sortable=True)
+
+    with pytest.raises(TypeError):
+        ll.append({"priority": 1})
+
+    assert ll.get_values() == []
+
+
+def test_sort_raises_for_invalid_method():
     ll = SinglyLinkedList()
     ll.append_values([2, 1])
 
-    assert ll.sort(method=3) is False
+    with pytest.raises(ValueError):
+        ll.sort(method=3)
     assert ll.get_values() == [2, 1]
 
 
-def test_sort_returns_false_without_mutation_for_mixed_unsortable_values():
+def test_sort_raises_without_mutation_for_mixed_unsortable_values():
     ll = SinglyLinkedList()
     ll.append_values([2, "1", 3])
 
-    assert ll.sort(method=1) is False
+    with pytest.raises(TypeError):
+        ll.sort(method=1)
     assert ll.get_values() == [2, "1", 3]
     assert ll.tail.value == 3
 
